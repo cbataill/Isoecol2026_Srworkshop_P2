@@ -46,7 +46,7 @@ website:
 
   sidebar:
     style: docked
-    collapse-level: 1
+    collapse-level: 2
     contents:
       - href: index.qmd
         text: Welcome

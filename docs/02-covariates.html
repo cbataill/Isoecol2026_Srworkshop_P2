@@ -252,6 +252,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#think-pair-share-covariates-for-south-africa" id="toc-think-pair-share-covariates-for-south-africa" class="nav-link" data-scroll-target="#think-pair-share-covariates-for-south-africa">Think · Pair · Share: covariates for South Africa</a></li>
   </ul></li>
+  <li><a href="#applying-this-to-your-own-study-area" id="toc-applying-this-to-your-own-study-area" class="nav-link" data-scroll-target="#applying-this-to-your-own-study-area">Applying this to your own study area</a>
+  <ul class="collapse">
+  <li><a href="#download-the-global-rasters" id="toc-download-the-global-rasters" class="nav-link" data-scroll-target="#download-the-global-rasters">1. Download the global rasters</a></li>
+  <li><a href="#clip-them-to-your-study-area" id="toc-clip-them-to-your-study-area" class="nav-link" data-scroll-target="#clip-them-to-your-study-area">2. Clip them to your study area</a></li>
+  <li><a href="#point-the-script-to-your-rasters" id="toc-point-the-script-to-your-rasters" class="nav-link" data-scroll-target="#point-the-script-to-your-rasters">3. Point the script to your rasters</a></li>
+  <li><a href="#adjust-the-list-of-covariates" id="toc-adjust-the-list-of-covariates" class="nav-link" data-scroll-target="#adjust-the-list-of-covariates">4. Adjust the list of covariates</a></li>
+  <li><a href="#use-your-own-training-data" id="toc-use-your-own-training-data" class="nav-link" data-scroll-target="#use-your-own-training-data">5. Use your own training data</a></li>
+  <li><a href="#re-think-a-few-choices" id="toc-re-think-a-few-choices" class="nav-link" data-scroll-target="#re-think-a-few-choices">6. Re-think a few choices</a></li>
+  </ul></li>
   <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
   <li><a href="#next-3.-regression-matrix" id="toc-next-3.-regression-matrix" class="nav-link" data-scroll-target="#next-3.-regression-matrix"><strong>Next:</strong> 3. Regression matrix →</a></li>
   </ul>
@@ -322,6 +331,7 @@ Same projection, same grid
 </div>
 <div class="callout-body-container callout-body">
 <p>The rasters must share the same projection and resolution, and be snapped to each other. This preprocessing is slow for global layers, so it has been done for you: the global Eckert IV 1 km rasters (<a href="https://osf.io/a2r7g/">OSF</a>) are already clipped to South Africa in <code>Project_Raster/clipped_za</code>.</p>
+<p>Want to build an isoscape for <strong>your own study area</strong>? See <a href="#applying-this-to-your-own-study-area">Applying this to your own study area</a> at the end of this page.</p>
 </div>
 </div>
 <div class="quarto-figure quarto-figure-center">
@@ -696,6 +706,118 @@ Things you might have noticed
 </div>
 </div>
 </section>
+<section id="applying-this-to-your-own-study-area" class="level2">
+<h2 class="anchored" data-anchor-id="applying-this-to-your-own-study-area">Applying this to your own study area</h2>
+<p>The rasters in <code>Project_Raster/clipped_za</code> are the <strong>global</strong> covariates, already clipped to South Africa. To build an isoscape somewhere else, go back to the global rasters and clip them to your own area. The rest of the script stays the same.</p>
+<section id="download-the-global-rasters" class="level3">
+<h3 class="anchored" data-anchor-id="download-the-global-rasters">1. Download the global rasters</h3>
+<p>Download the global covariates (Eckert IV, 1 km) from the <code>Projected_rasters</code> folder of the <a href="https://osf.io/a2r7g/">OSF project</a>, and put them all in one folder, e.g.&nbsp;<code>Global_rasters/</code> next to <code>Data/</code> and <code>Project_Raster/</code>. They are already in the same projection and resolution and snapped to the same grid, so all you need to do is clip them.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Large files
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The global 1 km rasters are much larger than the South African ones. Download only the layers you need, and keep enough free disk space for the clipped copies.</p>
+</div>
+</div>
+</section>
+<section id="clip-them-to-your-study-area" class="level3">
+<h3 class="anchored" data-anchor-id="clip-them-to-your-study-area">2. Clip them to your study area</h3>
+<p>Define your study area as a polygon, reproject it to Eckert IV, add a buffer, then crop and mask every raster.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(terra)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rnaturalearth)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>eck4 <span class="ot">&lt;-</span> <span class="st">"+proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>global_dir <span class="ot">&lt;-</span> <span class="st">"Global_rasters"</span>                  <span class="co"># folder with the global OSF rasters</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>out_dir    <span class="ot">&lt;-</span> <span class="st">"Project_Raster/clipped_myarea"</span>   <span class="co"># where the clipped rasters will go</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(out_dir, <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Study area: here one or more countries from Natural Earth...</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>area <span class="ot">&lt;-</span> <span class="fu">ne_countries</span>(<span class="at">country =</span> <span class="fu">c</span>(<span class="st">"Kenya"</span>, <span class="st">"Tanzania"</span>), <span class="at">scale =</span> <span class="st">"medium"</span>, <span class="at">returnclass =</span> <span class="st">"sf"</span>)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co"># ...or your own polygon: area &lt;- st_read("my_study_area.shp")</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>area <span class="ot">&lt;-</span> area <span class="sc">|&gt;</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(eck4) <span class="sc">|&gt;</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_union</span>() <span class="sc">|&gt;</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_buffer</span>(<span class="dv">50000</span>)   <span class="co"># 50 km buffer (see the tip below)</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>area_v <span class="ot">&lt;-</span> <span class="fu">vect</span>(area)</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Crop and mask every global raster to the study area</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (f <span class="cf">in</span> <span class="fu">list.files</span>(global_dir, <span class="at">pattern =</span> <span class="st">"</span><span class="sc">\\</span><span class="st">.tif$"</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)) {</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> <span class="fu">rast</span>(f)</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>  r <span class="ot">&lt;-</span> <span class="fu">crop</span>(r, <span class="fu">project</span>(area_v, <span class="fu">crs</span>(r)), <span class="at">mask =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">writeRaster</span>(r, <span class="fu">file.path</span>(out_dir, <span class="fu">basename</span>(f)), <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="fu">list.files</span>(out_dir)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Why a buffer?
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The neighbourhood covariates (Step 2.8) average the geology within 25 km. Near the edge of a tightly clipped area, those windows are cut in half. A buffer of at least 25 km (here 50 km) keeps them complete. It also lets you use training sites just outside your area of interest.</p>
+</div>
+</div>
+</section>
+<section id="point-the-script-to-your-rasters" class="level3">
+<h3 class="anchored" data-anchor-id="point-the-script-to-your-rasters">3. Point the script to your rasters</h3>
+<p>In the setup chunk, change the raster folder:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>raster_dir <span class="ot">&lt;-</span> <span class="st">"Project_Raster/clipped_myarea"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Then delete or rename <code>Project_Raster/neighbourhood/</code>, so that the neighbourhood layers (Step 2.8) are recomputed for your area instead of re-using the South African ones.</p>
+</section>
+<section id="adjust-the-list-of-covariates" class="level3">
+<h3 class="anchored" data-anchor-id="adjust-the-list-of-covariates">4. Adjust the list of covariates</h3>
+<p>Steps 2.2 to 2.7 load each raster by name, and Step 2.9 lists them in <code>predictor_names</code>. Every name in that list must exist in your folder.</p>
+<ul>
+<li><strong>Remove the South African layers:</strong> <code>r.geomap</code> and <code>r.vegmap</code> exist only for South Africa. The iSDA soil layers (<code>r.africa.*</code>) cover Africa only: outside Africa, remove them too.</li>
+<li><strong>Check the other layers:</strong> a few layers in the South African set are not part of the global script (<code>r.pet_clim</code>, <code>r.pfert</code>, <code>r.biofuels</code>, <code>r.biogenic</code>). Keep them only if you have them.</li>
+<li><strong>Add your own regional layers</strong> if they exist (detailed geological maps, radiometric surveys, soil geochemistry…). They must be in Eckert IV at 1 km, on the same grid. <code>project(my_layer, r.srsrq1)</code> does this for you.</li>
+</ul>
+<p>Instead of editing Steps 2.2 to 2.7 one line at a time, you can load everything in the folder at once. Run this chunk in place of Steps 2.2 to 2.7:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">list.files</span>(raster_dir, <span class="at">pattern =</span> <span class="st">"</span><span class="sc">\\</span><span class="st">.tif$"</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (f <span class="cf">in</span> files) <span class="fu">assign</span>(<span class="fu">sub</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">.tif$"</span>, <span class="st">""</span>, <span class="fu">basename</span>(f)), <span class="fu">rast</span>(f))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Then run Step 2.8 (neighbourhood geology) as usual, and replace the <code>predictor_names</code> list in Step 2.9 with:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Every raster in the folder is a candidate covariate, plus the neighbourhood layers of Step 2.8</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>predictor_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fu">sub</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">.tif$"</span>, <span class="st">""</span>, <span class="fu">basename</span>(files)), focal_names)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In the rest of Step 2.9, two lines refer to South African layers by name. Edit them if those layers are not in your folder:</p>
+<ul>
+<li><code>for (p in c("r.geomap", "r.vegmap")) levels(stack_all[[p]]) &lt;- NULL</code>: delete it if you have no categorical maps (or put your own categorical layers in the list).</li>
+<li><code>plot(stack_all[[c(..., "r.africa.Ca.0")]])</code>: remove <code>"r.africa.Ca.0"</code> outside Africa.</li>
+</ul>
+</section>
+<section id="use-your-own-training-data" class="level3">
+<h3 class="anchored" data-anchor-id="use-your-own-training-data">5. Use your own training data</h3>
+<p>Replace <code>Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv</code> with screened bioavailable ⁸⁷Sr/⁸⁶Sr data for your area, in the ARDUOUS format (see Module 1 and the <a href="https://doi.isoarch.org/10.48530/isoarch.2024.002">ARDUOUS dataset</a>). The script uses the columns <code>collection_decimal_longitude</code>, <code>collection_decimal_latitude</code>, <code>87Sr86Sr</code> and <code>material_type</code>.</p>
+</section>
+<section id="re-think-a-few-choices" class="level3">
+<h3 class="anchored" data-anchor-id="re-think-a-few-choices">6. Re-think a few choices</h3>
+<ul>
+<li><strong>Coarse layers (Step 3.5):</strong> inside one country, dust and sea-salt models are smooth gradients that act like coordinates. Over a continent, they vary for real and can be useful. Compare <code>"all"</code> and <code>"no_coarse"</code> with the spatial cross-validation.</li>
+<li><strong>Spatial folds (Step 4.2):</strong> choose the number of clusters to match your sampling design, and check that the cross-validation distances look like the map’s.</li>
+<li><strong>Time and memory:</strong> a larger area means more pixels. If the prediction (Step 5.2) runs out of memory, increase <code>steps</code>.</li>
+<li><strong>Few data in your area?</strong> A locally trained model needs enough sites to learn from. With very few data, a globally trained isoscape (Bataille et al.&nbsp;2020) is often the better starting point.</li>
+</ul>
+</section>
+</section>
 <section id="summary" class="level2">
 <h2 class="anchored" data-anchor-id="summary">Summary</h2>
 <div class="callout callout-style-simple callout-note callout-titled">
@@ -712,6 +834,7 @@ Key takeaways
 <li>Covariates describe the sources, mixing and uptake of Sr.</li>
 <li>Regional datasets (soil chemistry, detailed geology) can add real information, but only if the training sites cover them.</li>
 <li>Bioavailable Sr integrates more than the rock under the pixel: neighbourhood geology captures this.</li>
+<li>To work in another area, clip the global OSF rasters to your study area (with a buffer) and adjust the covariate list.</li>
 </ul>
 </div>
 </div>

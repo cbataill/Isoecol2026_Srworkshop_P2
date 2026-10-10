@@ -17,6 +17,13 @@ The purpose of this vignette is to guide you through the steps of building a bio
 
 This version was prepared for the ISOECOL 2026 workshop (Hong Kong) and uses South Africa as a case study.
 
+## How to follow this workshop
+
+Run this script chunk by chunk in RStudio (open `Module2_isoscape.Rproj` first) and follow the website in your browser at the same time: https://cbataill.github.io/Isoecol2026_Srworkshop_P2/
+
+- 📖 lines tell you which page of the website matches the section you are in.
+- 🛑 lines are **Think · Pair · Share** breaks: stop running code and go to the website for the discussion questions.
+
 ## Objective:
 Build a random forest 87Sr/86Sr isoscape for South Africa.
 
@@ -101,6 +108,8 @@ raster_dir <- "Project_Raster/clipped_za"
 eck4 <- "+proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"
 ```
 
+> 📖 **Website, page 1: [1. Training data](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/01-training-data.html).** Keep it open next to RStudio: it explains each step and shows the figures you should get.
+
 ### STEP 1: TRAINING DATASET
 
 #### 1.1. Import the bioavailable 87Sr/86Sr training data
@@ -152,7 +161,11 @@ plot(st_geometry(za_p))
 ```
 
 
+> 🛑 **STOP: Think · Pair · Share.** Before you continue, switch to the website ([page 1, "a map for a butterfly"](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/01-training-data.html#think-pair-share-a-map-for-a-butterfly)). Think on your own, discuss with your neighbour, then share with the room.
+
 ## STEP 2: GLOBAL COVARIATES
+
+> 📖 **Website, page 2: [2. Covariates](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/02-covariates.html).** Keep it open next to RStudio: it explains each step and shows the figures you should get.
 
 In this step, we will load the covariates required to train our random forest model. These covariates encompass potential geological, environmental, and climatological variables that may influence bioavailable 87Sr/86Sr based on the cycling of strontium isotopes
 
@@ -414,7 +427,11 @@ for (p in c("r.geomap", "r.vegmap")) levels(stack_all[[p]]) <- NULL
 plot(stack_all[[c("r.srsrq1", "r.meanage_geol", "r.distance", "r.map", "r.dust", "r.africa.Ca.0")]])
 ```
 
+> 🛑 **STOP: Think · Pair · Share.** Before you continue, switch to the website ([page 2, "covariates for South Africa"](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/02-covariates.html#think-pair-share-covariates-for-south-africa)). Think on your own, discuss with your neighbour, then share with the room.
+
 ## STEP 3: EXTRACTION AND AMALGAMATION OF BASE DATA
+
+> 📖 **Website, page 3: [3. Regression matrix](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/03-regression-matrix.html).** Keep it open next to RStudio: it explains each step and shows the figures you should get.
 
 Now that you have a training set, consisting of projected points with 87Sr/86Sr in Eck IV, and spatial covariates also projected in Eck IV, you can overlay the points over the maps and extract the pixel value of each covariate under the point. Follow these steps:
 
@@ -571,6 +588,8 @@ sr_agg <- sr_agg[complete.cases(sr_agg),]
 write.table(sr_agg,"Output/sr_agg_all.txt",sep = "\t",col.names = T, row.names = F, quote = F)
 ```
 
+> 🛑 **STOP: Think · Pair · Share.** Before you continue, switch to the website ([page 3, "correlated covariates"](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/03-regression-matrix.html#think-pair-share-correlated-covariates)). Think on your own, discuss with your neighbour, then share with the room.
+
 # PART 2: Training a Model with All Bioavailable 87Sr/86Sr Data
 
 ## Objective 1: Build a Random Forest 87Sr/86Sr Isoscape for South Africa
@@ -583,6 +602,8 @@ Load the cleaned and prepared regression matrix obtained after handling NA value
 
 
 ## STEP 4: Train Random Forest Model
+
+> 📖 **Website, page 4: [4. Predictor selection and cross-validation](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/04-cross-validation.html).** Keep it open next to RStudio: it explains each step and shows the figures you should get.
 
 ### 4.1 Training Set
 
@@ -987,7 +1008,11 @@ p_res
 ggsave("Output/FigS7_residual_map.pdf", p_res, width = 8, height = 7)
 ```
 
+> 🛑 **STOP: Think · Pair · Share.** Before you continue, switch to the website ([page 4, "random vs. spatial CV"](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/04-cross-validation.html#think-pair-share-random-vs.-spatial-cv)). Think on your own, discuss with your neighbour, then share with the room.
+
 ### 4.8 Plot Feature Importance and Partial Dependence
+
+> 📖 **Website, page 5: [5. Interpreting the model](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/05-interpretation.html).** Keep it open next to RStudio: it explains each step and shows the figures you should get.
 
 In Random Forest models, understanding feature importance and exploring partial dependence plots are crucial steps in interpreting model behavior. These visualizations offer insights into the impact of predictor variables on predictions.
 
@@ -1093,7 +1118,11 @@ final_plot
 ggsave("Output/FigS4.pdf", final_plot, width = 16, height = 14)
 ```
 
+> 🛑 **STOP: Think · Pair · Share.** Before you continue, switch to the website ([page 5, "reading partial dependence"](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/05-interpretation.html#think-pair-share-reading-partial-dependence)). Think on your own, discuss with your neighbour, then share with the room.
+
 ## STEP 5. Apply the Trained Model Spatially to Produce an Isoscape and its Uncertainty
+
+> 📖 **Website, page 6: [6. Isoscape and uncertainty](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/06-isoscape.html).** Keep it open next to RStudio: it explains each step and shows the figures you should get.
 
 **Key Operations:**
 ### 5.1. Create a Predictor Stack:
@@ -1202,6 +1231,8 @@ plot(st_geometry(za_p), add = TRUE, border = "grey30", lwd = 0.5)
 plot(rf_sr_sd, col = viridis_pal(option = "turbo")(13), breaks = breakpoints2, axes = FALSE, main = "Uncertainty (1 SD)")
 plot(st_geometry(za_p), add = TRUE, border = "grey30", lwd = 0.5)
 ```
+
+> 🛑 **STOP: Think · Pair · Share.** Before you continue, switch to the website ([page 6, "patterns and uncertainty"](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/06-isoscape.html#think-pair-share-patterns-and-uncertainty)). Think on your own, discuss with your neighbour, then share with the room.
 
 ## Additional exercises
 

@@ -132,6 +132,7 @@ file.exists(c("Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv",
 1.  Open the project (Option A), then open `Script_RF_isoscape_SouthAfrica.Rmd`.
 2.  Run the setup chunk: it installs any missing packages.
 3.  Run chunk by chunk (Ctrl+Shift+Enter on Windows, Cmd+Shift+Enter on Mac) and look at each output. You can also copy the code from this site into the console, as long as the working directory is set.
+4.  Keep this website open next to RStudio. The script tells you where to look: **📖** lines name the matching page of the website, and **🛑 STOP** lines mark the Think · Pair · Share breaks, with a direct link to the discussion questions.
 
 The whole script takes ~15–20 min on a laptop. The two slow steps are VSURF (~8 min, [Step 4.3](04-cross-validation.qmd#step-4.3-predictor-selection-with-vsurf)) and the isoscape prediction (~5 min, [Step 5.2](06-isoscape.qmd)). If your laptop is slow, load the pre-computed results from `Output/`.
 :::

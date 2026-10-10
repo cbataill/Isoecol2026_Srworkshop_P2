@@ -1,0 +1,679 @@
+[
+  {
+    "objectID": "06-isoscape.html",
+    "href": "06-isoscape.html",
+    "title": "6. Isoscape and uncertainty",
+    "section": "",
+    "text": "In this section\n\n\n\n\nYou’ll learn: how to predict the isoscape and its uncertainty, and how to read them before using them for assignment\nYou’ll need: RF_all (Section 4) and stack_all (Section 2)\nTime: about 15 minutes (plus ~5 min of prediction)",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "6. Isoscape and uncertainty"
+    ]
+  },
+  {
+    "objectID": "06-isoscape.html#overview",
+    "href": "06-isoscape.html#overview",
+    "title": "6. Isoscape and uncertainty",
+    "section": "Overview",
+    "text": "Overview\nWe now apply the trained model to every 1 km pixel of South Africa. Because the model was trained as a quantile random forest (quantreg = TRUE), the same model gives both the mean isoscape and its uncertainty in a single pass.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "6. Isoscape and uncertainty"
+    ]
+  },
+  {
+    "objectID": "06-isoscape.html#step-5.1-create-the-predictor-stack",
+    "href": "06-isoscape.html#step-5.1-create-the-predictor-stack",
+    "title": "6. Isoscape and uncertainty",
+    "section": "Step 5.1: Create the predictor stack",
+    "text": "Step 5.1: Create the predictor stack\nThe stack must contain the same covariates, with the same names, as the training table.\n\n# Stack of the selected predictors (same names as in the training table)\nstack_sel &lt;- stack_all[[predictors]]\nstack_sel",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "6. Isoscape and uncertainty"
+    ]
+  },
+  {
+    "objectID": "06-isoscape.html#step-5.2-mean-isoscape-and-uncertainty-in-a-single-pass",
+    "href": "06-isoscape.html#step-5.2-mean-isoscape-and-uncertainty-in-a-single-pass",
+    "title": "6. Isoscape and uncertainty",
+    "section": "Step 5.2: Mean isoscape and uncertainty in a single pass",
+    "text": "Step 5.2: Mean isoscape and uncertainty in a single pass\nA random forest gives one prediction per pixel (the mean of all trees). A quantile random forest can also predict quantiles of the distribution in each pixel. The 15.9% and 84.1% quantiles bracket 68% of the predictions (±1 SD if the distribution is normal). Half of this range is our uncertainty (1 SD), which is what we need for Bayesian assignment with assignR in Module 3.\nterra::predict() reads the rasters block by block (so memory is not a problem), calls our small function on each block, and writes the three layers (mean, Q15.9, Q84.1) directly to a GeoTIFF.\n\n\n\n\n\n\nThis step takes a few minutes\n\n\n\nIf memory is limited, increase steps. If it is too slow, the results are already in Output/rf_all_pred.tif and Output/rf_all_sd.tif.\n\n\n\n# For a block of pixels: mean prediction + 15.9% and 84.1% quantiles\npredict_mean_quantiles &lt;- function(model, data, ...) {\n  q &lt;- predict(model, data = data, type = \"quantiles\", quantiles = c(0.159, 0.841))$predictions\n  cbind(mean = predict(model, data = data)$predictions, q159 = q[, 1], q841 = q[, 2])\n}\n\nrf_pred &lt;- terra::predict(stack_sel, RF_all$finalModel, fun = predict_mean_quantiles, na.rm = TRUE,\n                          filename = \"Output/rf_all_pred_quantiles1.tif\", overwrite = TRUE,\n                          wopt = list(steps = 20, names = c(\"mean\", \"q159\", \"q841\")))\n\n# Mean isoscape and uncertainty (1 SD = half of the 68% interval)\nrf_sr    &lt;- rf_pred[[\"mean\"]]\nrf_sr_sd &lt;- (rf_pred[[\"q841\"]] - rf_pred[[\"q159\"]]) / 2\n\nwriteRaster(rf_sr,    filename = \"Output/rf_all_pred.tif\", overwrite = TRUE)\nwriteRaster(rf_sr_sd, filename = \"Output/rf_all_sd.tif\",   overwrite = TRUE)\n\n\n###Create breakpoints for random forest prediction map (adapted to the South African range)\nbreakpoints &lt;- c(0.705, 0.708, 0.710, 0.712, 0.714, 0.716, 0.718, 0.720, 0.725, 0.730, 0.740, 0.760, 0.800)\ns_proj$Col &lt;- viridis_pal(option = \"viridis\")(12)[as.numeric(cut(s_proj$X87Sr86Sr, breaks = breakpoints))]\n\n#Plot the mean prediction of the isoscape using viridis colorscale\npar(mfrow = c(1,1))\nplot(rf_sr, col = viridis_pal(option = \"viridis\")(12), breaks = breakpoints, axes = FALSE)\nplot(st_geometry(za_p), add = TRUE, border = \"grey30\")\npoints(st_coordinates(s_proj), pch = 21, col = \"black\", bg = s_proj$Col, cex = 0.8)\nsbar(200000, xy = \"bottomright\", type = \"bar\", divs = 2, below = \"km\", labels = c(0, 100, 200), cex = 0.7)",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "6. Isoscape and uncertainty"
+    ]
+  },
+  {
+    "objectID": "06-isoscape.html#step-5.3-figures",
+    "href": "06-isoscape.html#step-5.3-figures",
+    "title": "6. Isoscape and uncertainty",
+    "section": "Step 5.3: Figures",
+    "text": "Step 5.3: Figures\n\n\nShow the code for Fig. 1\npdf(\"Output/Fig1.pdf\", width = 8, height = 7)\n# Elevation as a background and training sites coloured by sample type\ns_proj$type &lt;- ifelse(grepl(\"plant\", s_proj$material_type), \"plant\",\n                ifelse(grepl(\"soil\", s_proj$material_type), \"soil\", \"fauna\"))\npar(mfrow = c(1, 1), mar = c(1, 1, 1, 1))\nbreaks &lt;- c(0, 100, 250, 500, 750, 1000, 1250, 1500, 2000, 2500, 3500)\nplot(r.elevation, col = terrain.colors(10), breaks = breaks, axes = FALSE)\nplot(st_geometry(za_p), add = TRUE, border = \"black\", lwd = 0.5)\ntype_col &lt;- c(plant = \"forestgreen\", soil = \"sienna\", fauna = \"steelblue\")\npoints(st_coordinates(s_proj), pch = 21, bg = type_col[s_proj$type], cex = 0.9, lwd = 0.4)\nlegend(\"topleft\", inset = c(0.08, 0.02), legend = names(type_col),\n       pt.bg = type_col, pch = 21, pt.cex = 1.3, bty = \"n\", cex = 0.8, title = \"Training data\")\nsbar(200000, xy = \"bottomright\", type = \"bar\", divs = 2, below = \"km\", labels = c(0, 100, 200), cex = 0.7)\ndev.off()\n\n\n\n\nShow the code for Fig. 2\nrf_sr_sd &lt;- terra::rast(\"Output/rf_all_sd.tif\")\n\n####Figure for 87Sr/86Sr isoscape with all data\n###Create breakpoints for the uncertainty map (adapted to the South African range)\nbreakpoints2 &lt;- c(0, 0.0005, 0.001, 0.0015, 0.002, 0.0025, 0.003, 0.004, 0.005, 0.0075, 0.01, 0.015, 0.02, 0.05)\n\npdf(\"Output/Fig2.pdf\", width = 12, height = 5)\n# Set up the plotting area with adjusted margins\npar(mfrow = c(1, 2), mar = c(0, 0.2, 0, 4), oma = c(0, 0, 0, 4))  # Adjust outer margins (oma) and plot margins (mar)\n\nplot(rf_sr, col = viridis_pal(option = \"viridis\")(12),\n  breaks = breakpoints, axes = FALSE)\nplot(st_geometry(za_p), add = TRUE, border = \"grey30\", lwd = 0.5)\npoints(st_coordinates(s_proj),pch = 21,col = \"white\",bg = s_proj$Col,lwd = 0.1,cex = 0.5)\nsbar(200000, xy = \"bottomright\", type = \"bar\", divs = 2, below = \"km\", labels = c(0, 100, 200), cex = 0.7)\n\nplot(rf_sr_sd, col = viridis_pal(option = \"turbo\")(13), breaks = breakpoints2, axes = FALSE)\nplot(st_geometry(za_p), add = TRUE, border = \"grey30\", lwd = 0.5)\npoints(st_coordinates(s_proj),pch = 21,col = \"black\",bg = \"white\",lwd = 0.1,cex = 0.3)\nsbar(200000, xy = \"bottomright\", type = \"bar\", divs = 2, below = \"km\", labels = c(0, 100, 200), cex = 0.7)\ndev.off()\n\n\n\n# Same figure in the notebook\npar(mfrow = c(1, 2), mar = c(0, 0.2, 1.5, 4))\nplot(rf_sr, col = viridis_pal(option = \"viridis\")(12), breaks = breakpoints, axes = FALSE, main = \"Bioavailable 87Sr/86Sr\")\nplot(st_geometry(za_p), add = TRUE, border = \"grey30\", lwd = 0.5)\nplot(rf_sr_sd, col = viridis_pal(option = \"turbo\")(13), breaks = breakpoints2, axes = FALSE, main = \"Uncertainty (1 SD)\")\nplot(st_geometry(za_p), add = TRUE, border = \"grey30\", lwd = 0.5)\n\n\n\n\n\n\n\n\n\n\nBioavailable ⁸⁷Sr/⁸⁶Sr\n\n\n\n\n\n\n\nUncertainty (1 SD)\n\n\n\n\n\nZoom into the south-western Cape, where most training sites are:\n\n\n\n\n\n\n\n\n\nMean ⁸⁷Sr/⁸⁶Sr, south-western Cape\n\n\n\n\n\n\n\nUncertainty (1 SD), south-western Cape\n\n\n\n\n\n\n🗺️ Think · Pair · Share: patterns and uncertainty\nMean isoscape and 1 SD from the quantile random forest. Can you explain the patterns, and would you trust this map to assign a butterfly?\n\n\n💭 Think 2 min\n\nplot(c(rf_sr, rf_sr_sd))\n\nOn your own:\n\nWhere is the predicted ⁸⁷Sr/⁸⁶Sr highest and lowest?\nWhere is the SD highest and lowest?\n\n\n\n🤝 Pair 3 min\nWith your neighbour:\n\nExplain the patterns with geology and Sr sources.\nIs the SD high where there are no data, where the geology is complex, or both?\nDo you see artefacts: straight edges, blocks, smooth coordinate-like gradients?\n\n\n\n📣 Share 3 min\nTell the room:\n\nWhere would you trust this map for assignment in Module 3?\nWhere would you sample next?\n\n\n\n\n\n\n\n\n\n\nThings you might have noticed\n\n\n\n\n\n🪨 Spatial patterns\n\nRadiogenic highs (&gt; 0.74) in the north-east and along the Orange River and Namaqualand: old granites and gneisses of the Kaapvaal Craton and the Namaqua-Natal belt.\nLows (&lt; 0.712) over Lesotho: the Drakensberg (Karoo) flood basalts.\nLow values along the coast from sea-salt Sr. In the south-western Cape, a mosaic of Cape Granite Suite, Table Mountain Group, Malmesbury Group and Quaternary sands.\n\n📊 Uncertainty\n\nThe highest SD (&gt; 0.02) is over the same radiogenic terrains: old rocks have very heterogeneous minerals, and there are few sites.\nThe SD is low over the Karoo interior despite sparse data. A quantile random forest reports the spread of similar training sites, not the distance to the data.\nSo the SD can underestimate the error where the model extrapolates. Pair it with an area of applicability (Meyer & Pebesma 2021, CAST::aoa()).\nCheck sharp boundaries and blocky shapes against the covariates that created them.\n\n🦋 For assignment\n\nThe SD map becomes the isoscape uncertainty in assignR::pdRaster(). An SD that is too small gives over-confident assignments.\nSample next where the SD is high or the model extrapolates (north-east, Northern Cape, interior).\n\nTake-home: an isoscape is a mean and an uncertainty, and the assignment inherits both.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "6. Isoscape and uncertainty"
+    ]
+  },
+  {
+    "objectID": "06-isoscape.html#exercises",
+    "href": "06-isoscape.html#exercises",
+    "title": "6. Isoscape and uncertainty",
+    "section": "Exercises",
+    "text": "Exercises\n\nExercise 1: sample types\n\n\n\n\n\n\n🧩 Your turn\n\n\n\nTrain the model with plants only. In Step 1.1, add:\n\nsr_orig &lt;- sr_orig[grepl(\"plant\", sr_orig$material_type), ]\n\nThen re-run the script. Where does the isoscape change? Why?\n\n\n\n\n\n\n\n\nThings to look for\n\n\n\n\n\nCompare the two maps in the regions where most of the removed fauna and soil sites were. Small mammals integrate Sr over a home range and diet, and soil leachates sample a different pool than plant roots, so the plant-only map should be closer to what a caterpillar eats. It also has fewer sites, so check the spatial CV and the SD too.\n\n\n\n\n\nExercise 2: uncertainty\n\n\n\n\n\n\n🧩 Your turn\n\n\n\nPlot the training sites on the SD map. Where is the uncertainty highest? Is it where there are no data, where the geology is complex, or both?\n\n\n\n\nExercise 3: from isoscape to assignment\n\n\n\n\n\n\n🧩 Your turn\n\n\n\nUse Output/rf_all_pred.tif and Output/rf_all_sd.tif as the isoscape and its uncertainty in a Bayesian assignment with assignR::pdRaster(). This is exactly where Module 3 starts!",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "6. Isoscape and uncertainty"
+    ]
+  },
+  {
+    "objectID": "06-isoscape.html#summary",
+    "href": "06-isoscape.html#summary",
+    "title": "6. Isoscape and uncertainty",
+    "section": "Summary",
+    "text": "Summary\n\n\n\n\n\n\nKey takeaways\n\n\n\n\nA quantile random forest gives the mean isoscape and its uncertainty from the same model.\nThe patterns follow geology (old radiogenic basement vs. basalts and carbonates) and sea-salt input.\nThe SD reflects the spread of similar training sites, not the distance to data, so check where the model extrapolates.\nChoose predictors with process knowledge, validate spatially, and map the uncertainty.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "6. Isoscape and uncertainty"
+    ]
+  },
+  {
+    "objectID": "04-cross-validation.html",
+    "href": "04-cross-validation.html",
+    "title": "4. Predictor selection and cross-validation",
+    "section": "",
+    "text": "In this section\n\n\n\n\nYou’ll learn: why random cross-validation is over-optimistic for spatial data, and how to select predictors and tune a random forest with spatial cross-validation\nYou’ll need: Output/sr_agg_all.txt (Section 3)\nTime: about 30 minutes (plus ~8 min of VSURF over lunch)",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "4. Predictor selection and cross-validation"
+    ]
+  },
+  {
+    "objectID": "04-cross-validation.html#overview",
+    "href": "04-cross-validation.html#overview",
+    "title": "4. Predictor selection and cross-validation",
+    "section": "Overview",
+    "text": "Overview\nWe now train a random forest on all the bioavailable data we prepared. Before selecting predictors and tuning the model, we need to decide how we will evaluate it, because the evaluation drives both.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "4. Predictor selection and cross-validation"
+    ]
+  },
+  {
+    "objectID": "04-cross-validation.html#step-4.1-training-set",
+    "href": "04-cross-validation.html#step-4.1-training-set",
+    "title": "4. Predictor selection and cross-validation",
+    "section": "Step 4.1: Training set",
+    "text": "Step 4.1: Training set\nIf Sections 1 to 3 took too long, you can start here: the training set is saved in Output/.\n\nsr_agg &lt;- read.table(\"Output/sr_agg_all.txt\", sep = \"\\t\", h = T)\n\n# Training sites as sf points (Eckert IV), used for maps and distances below\nsites_sf &lt;- st_as_sf(sr_agg, coords = c(\"X\", \"Y\"), crs = eck4, remove = FALSE)\n\n# Small helper used throughout Step 4: cross-validated predictions of a ranger\n# model for a set of predictors and a vector of fold numbers (one per site).\n# It returns RMSE and R2 of the out-of-fold predictions.\ncv_ranger &lt;- function(vars, folds, data = sr_agg, num.trees = 300) {\n  pred &lt;- rep(NA_real_, nrow(data))\n  for (k in unique(folds)) {\n    test &lt;- folds == k\n    m &lt;- ranger(x = data[!test, vars, drop = FALSE], y = data$X87Sr86Sr[!test],\n                num.trees = num.trees, seed = 1)\n    pred[test] &lt;- predict(m, data[test, vars, drop = FALSE])$predictions\n  }\n  c(RMSE = sqrt(mean((data$X87Sr86Sr - pred)^2)), R2 = cor(data$X87Sr86Sr, pred)^2)\n}",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "4. Predictor selection and cross-validation"
+    ]
+  },
+  {
+    "objectID": "04-cross-validation.html#step-4.2-random-vs.-spatial-cross-validation",
+    "href": "04-cross-validation.html#step-4.2-random-vs.-spatial-cross-validation",
+    "title": "4. Predictor selection and cross-validation",
+    "section": "Step 4.2: Random vs. spatial cross-validation",
+    "text": "Step 4.2: Random vs. spatial cross-validation\nIn a regular (random) k-fold cross-validation, the sites are split at random into 10 folds, and each fold is predicted by a model trained on the other 9. But ⁸⁷Sr/⁸⁶Sr data are spatially clustered: in South Africa, most sites are in the south-western Cape. A test site almost always has a training site a few hundred metres away, with the same geology and the same ⁸⁷Sr/⁸⁶Sr. Random cross-validation therefore measures how well the model interpolates between nearby sites, not how well it predicts the large unsampled regions of the map.\nIn a spatial-block cross-validation, the folds are geographical clusters of sites (here 10 clusters made with k-means on the X/Y coordinates). The model is always tested on a region it has not seen.\n\n# Random folds (10-fold)\nset.seed(1)\nrandom_folds &lt;- sample(rep(1:10, length.out = nrow(sr_agg)))\n\n# Spatial folds: 10 geographical clusters of sites (k-means on the coordinates)\n# (more advanced alternatives: blockCV package, or CAST::knndm, Linnenbrink et al., 2024)\nset.seed(1)\nspatial_folds &lt;- kmeans(sr_agg[, c(\"X\", \"Y\")], centers = 10, nstart = 20)$cluster\n\n# Map of the two fold designs\npar(mfrow = c(1, 2), mar = c(0, 0, 2, 0))\nplot(st_geometry(za_p), main = \"Random 10-fold CV\", border = \"grey50\")\npoints(sr_agg$X, sr_agg$Y, col = rainbow(10)[random_folds], pch = 16, cex = 0.6)\nplot(st_geometry(za_p), main = \"Spatial-block 10-fold CV\", border = \"grey50\")\npoints(sr_agg$X, sr_agg$Y, col = rainbow(10)[spatial_folds], pch = 16, cex = 0.6)\n\n\n\n\nRandom folds are mixed everywhere; spatial folds are blocks\n\n\nA good cross-validation should mimic the prediction situation (Meyer & Pebesma, 2022). We compare the distance from each test site to its nearest training site with the distance from each pixel of the map to its nearest training site.\n\n\nShow the code\n# Distance (km) from each point of 'from' to its nearest point in 'to'\nnn_dist &lt;- function(from, to) {\n  idx &lt;- st_nearest_feature(from, to)\n  as.numeric(st_distance(from, to[idx, ], by_element = TRUE)) / 1000\n}\n\n# 1. Prediction situation: 5000 random pixels of the map -&gt; nearest training site\nmap_pts &lt;- st_as_sf(spatSample(r.srsrq1, size = 5000, method = \"random\", na.rm = TRUE, as.points = TRUE))\nmap_pts &lt;- suppressWarnings(st_set_crs(map_pts, st_crs(sites_sf)))   # same Eckert IV projection, harmonise the CRS label\nd_map &lt;- nn_dist(map_pts, sites_sf)\n\n# 2. Cross-validation situation: each test site -&gt; nearest training site of the other folds\ncv_dist &lt;- function(folds) {\n  unlist(lapply(unique(folds), function(k) nn_dist(sites_sf[folds == k, ], sites_sf[folds != k, ])))\n}\nd_random  &lt;- cv_dist(random_folds)\nd_spatial &lt;- cv_dist(spatial_folds)\n\ndist_df &lt;- rbind(data.frame(type = \"Map pixels -&gt; training sites (prediction)\", dist = d_map),\n                 data.frame(type = \"Random CV: test -&gt; training sites\", dist = d_random),\n                 data.frame(type = \"Spatial CV: test -&gt; training sites\", dist = d_spatial))\n\np_dist &lt;- ggplot(dist_df, aes(x = dist + 0.1, colour = type, fill = type)) +\n  geom_density(alpha = 0.2) +\n  scale_x_log10(breaks = c(0.1, 1, 10, 100, 1000), labels = c(\"0\", \"1\", \"10\", \"100\", \"1000\")) +\n  labs(x = \"Distance to nearest training site (km, log scale)\", y = \"Density\", colour = NULL, fill = NULL) +\n  theme_minimal() + theme(legend.position = \"bottom\", legend.direction = \"vertical\")\np_dist\nggsave(\"Output/FigS5_distances_CV.pdf\", p_dist, width = 8, height = 6)\n\n# Median distances (km)\nround(c(map = median(d_map), random_CV = median(d_random), spatial_CV = median(d_spatial)), 1)\n\n\n\n\n\nDistance to the nearest training site: map pixels vs. random CV vs. spatial CV\n\n\n\n\n\n\n\n\n🔍 Look carefully\n\n\n\nIn random cross-validation, the test sites are typically less than 1 km from a training site (median 6 km), whereas the median map pixel is 84 km from any data. The spatial cross-validation (84 km) is much closer to the real prediction situation. This is why we use the spatial cross-validation for predictor selection (Step 4.4) and tuning (Step 4.6).",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "4. Predictor selection and cross-validation"
+    ]
+  },
+  {
+    "objectID": "04-cross-validation.html#step-4.3-predictor-selection-with-vsurf",
+    "href": "04-cross-validation.html#step-4.3-predictor-selection-with-vsurf",
+    "title": "4. Predictor selection and cross-validation",
+    "section": "Step 4.3: Predictor selection with VSURF",
+    "text": "Step 4.3: Predictor selection with VSURF\nVSURF (Variable Selection Using Random Forests) ranks the predictors by their importance in a series of random forests, then removes the less important ones step by step. It returns three nested sets:\n\n\n\n\n\n\n\n\nSet\nVSURF step\nWhat it keeps\n\n\n\n\nvarselect.thres\nthresholding\nremoves the variables indistinguishable from noise; keeps most variables\n\n\nvarselect.interp\ninterpretation\nall the variables related to ⁸⁷Sr/⁸⁶Sr, including correlated ones\n\n\nvarselect.pred\nprediction\nthe smallest set that gives the best prediction; very restrictive\n\n\n\nHere we use varselect.interp by default: it keeps more variables (and therefore more processes) for nearly the same accuracy. Then, in Step 4.4, we prune it with the spatial cross-validation.\n\n\n\n\n\n\nVSURF behaves like a random cross-validation\n\n\n\nVSURF uses the out-of-bag error, which does not know about spatial autocorrelation. Interpret its results cautiously.\n\n\n\n\n\n\n\n\nThis step takes ~8 minutes\n\n\n\nStart it before lunch! If your laptop is slow, load the saved result instead: load(\"Output/VSURF_all\").\n\n\n\n# Set a random seed for reproducibility\nset.seed(1)\n# Create a copy of 'sr_agg'\nsr_agg0 &lt;- sr_agg\n\n# Apply VSURF algorithm to select relevant variables for predicting 'X87Sr86Sr'\n# Using the 'ranger' implementation with parallelization\n# Columns 1 to 3 are X87Sr86Sr, X and Y: the covariates start at column 4\nsr_agg1.vsurf &lt;- VSURF(\n  sr_agg0[, 4:ncol(sr_agg0)],\n  sr_agg0$X87Sr86Sr,\n  mtry = max(floor((ncol(sr_agg0) - 3)/3), 1),\n ntree.thres = 1000,\n nfor.thres = 20,\n nmin = 1,\n ntree.interp = 1000,\n nfor.interp = 10,\n nsd = 1,\n ntree.pred = 1000,\n nfor.pred = 10,\n nmj = 1,\n  RFimplem = \"ranger\",\n  parallel = TRUE,\n  ncores = n_cores,\n  clusterType = \"PSOCK\"\n)\n\nsave(sr_agg1.vsurf, file = \"Output/VSURF_all\")\n\n\n#Plot VSURF results\nplot(sr_agg1.vsurf)\n\n# Names of the covariates (columns 4 to end)\ncovariate_names &lt;- names(sr_agg0)[4:ncol(sr_agg0)]\n\n# Variables selected at each of the three VSURF steps\nvsurf_sets &lt;- list(thres  = covariate_names[sr_agg1.vsurf$varselect.thres],\n                   interp = covariate_names[sr_agg1.vsurf$varselect.interp],\n                   pred   = covariate_names[sr_agg1.vsurf$varselect.pred])\nlengths(vsurf_sets)\nvsurf_sets\n\n# Choose the VSURF step used for the next steps: \"interp\" (default) or \"pred\" (as in the global script)\nvsurf_step &lt;- \"interp\"\nvars_vsurf &lt;- vsurf_sets[[vsurf_step]]\n\n\n\n\nVSURF: OOB error drops quickly and reaches a minimum at about seven variables",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "4. Predictor selection and cross-validation"
+    ]
+  },
+  {
+    "objectID": "04-cross-validation.html#step-4.4-spatial-pruning-of-the-predictors",
+    "href": "04-cross-validation.html#step-4.4-spatial-pruning-of-the-predictors",
+    "title": "4. Predictor selection and cross-validation",
+    "section": "Step 4.4: Spatial pruning of the predictors",
+    "text": "Step 4.4: Spatial pruning of the predictors\nSome predictors help to “recognise” the places where the training sites are (they act as a proxy for coordinates) but do not help to predict unsampled regions. To find them, we do a backward elimination with the spatial cross-validation:\n\nCompute the spatial-CV RMSE with all the VSURF variables.\nRemove each variable in turn and recompute the spatial-CV RMSE.\nIf removing one variable improves the RMSE by more than tol (2%), remove the one that improves it most and go back to 2. Otherwise stop.\n\nWhy 2%? The spatial-CV RMSE changes by ~0.5–1% just by changing the random seed, so smaller “improvements” are noise. (For a more systematic approach, see the forward feature selection with spatial CV of Meyer et al. 2018, in the CAST package.)\n\nspatial_pruning &lt;- TRUE\ntol &lt;- 0.02\nntree_pruning &lt;- 1000\n\nvars_final &lt;- vars_vsurf\nbest &lt;- cv_ranger(vars_final, spatial_folds, num.trees = ntree_pruning)[\"RMSE\"]\npruning_path &lt;- data.frame(step = 0, n_vars = length(vars_final), RMSE = best, removed = \"start (VSURF set)\")\n\nif (spatial_pruning) {\n  repeat {\n    if (length(vars_final) &lt;= 2) break\n    # spatial-CV RMSE after removing each variable in turn\n    rmse_without &lt;- sapply(vars_final, function(v) cv_ranger(setdiff(vars_final, v), spatial_folds, num.trees = ntree_pruning)[\"RMSE\"])\n    if (min(rmse_without) &lt; best * (1 - tol)) {\n      worst &lt;- vars_final[which.min(rmse_without)]\n      vars_final &lt;- setdiff(vars_final, worst)\n      best &lt;- min(rmse_without)\n      pruning_path &lt;- rbind(pruning_path, data.frame(step = nrow(pruning_path), n_vars = length(vars_final),\n                                                     RMSE = best, removed = worst))\n    } else break\n  }\n}\npruning_path\nvars_final\n\n# Training dataset for random forest: 87Sr/86Sr + selected predictors\ntraining_rf &lt;- sr_agg[, c(\"X87Sr86Sr\", vars_final)]",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "4. Predictor selection and cross-validation"
+    ]
+  },
+  {
+    "objectID": "04-cross-validation.html#step-4.5-compare-the-predictor-sets",
+    "href": "04-cross-validation.html#step-4.5-compare-the-predictor-sets",
+    "title": "4. Predictor selection and cross-validation",
+    "section": "Step 4.5: Compare the predictor sets",
+    "text": "Step 4.5: Compare the predictor sets\nFor each set of predictors, we compare the R² obtained with random and with spatial cross-validation.\n\n\nShow the code\nsets &lt;- list(\"All candidates\" = names(sr_agg)[4:ncol(sr_agg)],\n             \"VSURF thres\" = vsurf_sets$thres,\n             \"VSURF interp\" = vsurf_sets$interp,\n             \"VSURF pred\" = vsurf_sets$pred,\n             \"Final (spatially pruned)\" = vars_final)\n\nset_compare &lt;- do.call(rbind, lapply(names(sets), function(s) {\n  data.frame(set = s, n_vars = length(sets[[s]]),\n             CV = c(\"Random CV\", \"Spatial CV\"),\n             R2 = c(cv_ranger(sets[[s]], random_folds)[\"R2\"], cv_ranger(sets[[s]], spatial_folds)[\"R2\"]))\n}))\nset_compare$set &lt;- factor(paste0(set_compare$set, \"\\n(\", set_compare$n_vars, \" var.)\"),\n                          levels = unique(paste0(set_compare$set, \"\\n(\", set_compare$n_vars, \" var.)\")))\nset_compare\n\np_sets &lt;- ggplot(set_compare, aes(x = set, y = R2, fill = CV)) +\n  geom_col(position = \"dodge\") +\n  geom_text(aes(label = round(R2, 2)), position = position_dodge(0.9), vjust = -0.3, size = 3) +\n  scale_fill_manual(values = c(\"Random CV\" = \"grey60\", \"Spatial CV\" = \"darkorange\")) +\n  labs(x = NULL, y = \"Cross-validated R2\", fill = NULL, title = \"Random CV hides what spatial CV reveals\") +\n  theme_minimal()\np_sets\nggsave(\"Output/FigS6_predictor_sets_CV.pdf\", p_sets, width = 10, height = 5)\n\n# Path of the spatial pruning\nif (nrow(pruning_path) &gt; 1) {\n  ggplot(pruning_path, aes(x = step, y = RMSE)) +\n    geom_line() + geom_point() +\n    geom_text(aes(label = removed), vjust = -0.8, size = 3) +\n    labs(x = \"Pruning step\", y = \"Spatial-CV RMSE\", title = \"Spatial pruning of the VSURF variables\") +\n    theme_minimal()\n}\n\n\n\n\n\nRandom CV barely changes between predictor sets (0.75–0.76); spatial CV separates them (0.57–0.71)",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "4. Predictor selection and cross-validation"
+    ]
+  },
+  {
+    "objectID": "04-cross-validation.html#step-4.6-tune-and-train-the-random-forest",
+    "href": "04-cross-validation.html#step-4.6-tune-and-train-the-random-forest",
+    "title": "4. Predictor selection and cross-validation",
+    "section": "Step 4.6: Tune and train the random forest",
+    "text": "Step 4.6: Tune and train the random forest\n\nWe use the fast ranger implementation, which uses all the cores of your computer by itself.\nWe tune mtry (number of variables sampled at each split) and min.node.size (minimum number of sites in a terminal node).\nThe tuning uses the spatial folds: we choose the hyperparameters that predict new regions best.\nThe model is trained with quantreg = TRUE (quantile regression forest, Meinshausen 2006). The same model gives the mean isoscape and its uncertainty in Section 6.\n\n\n# Spatial-block cross-validation: one spatial cluster is left out at a time\n# index    = for each fold, the rows used for training (all the other blocks)\n# indexOut = for each fold, the rows used for testing (the block left out)\nblocks &lt;- sort(unique(spatial_folds))\nfitControl_spatial &lt;- trainControl(\n   method = \"cv\",\n   index    = lapply(blocks, function(k) which(spatial_folds != k)),\n   indexOut = lapply(blocks, function(k) which(spatial_folds == k)),\n   savePredictions = \"final\",\n   verboseIter = FALSE,\n   allowParallel = FALSE)   # ranger is already multi-threaded\n\n# Tuning grid: mtry and min.node.size (splitrule fixed to \"variance\" for regression)\nn_pred &lt;- length(vars_final)\ntunegrid &lt;- expand.grid(mtry = unique(pmax(1, round(n_pred * c(0.2, 0.33, 0.5, 0.75)))),\n                        splitrule = \"variance\",\n                        min.node.size = c(5, 10, 20))\n\nset.seed(1)\nRF_all &lt;- train(X87Sr86Sr ~ ., data = training_rf,\n                method = \"ranger\", metric = \"RMSE\",\n                tuneGrid = tunegrid, trControl = fitControl_spatial,\n                num.trees = 500, quantreg = TRUE, importance = \"permutation\", seed = 1)\n\nsave(RF_all, file = \"Output/RF_all\")\n\n# Note: in this table, Rsquared is the mean of the R2 computed within each spatial\n# block. It is low because each block covers a small range of 87Sr/86Sr. The\n# tuning uses RMSE; the pooled R2 of all out-of-block predictions is computed below.\n# The spatial blocks have different sizes (one contains most of the Cape sites).\nRF_all\nRF_all$bestTune\n\nFor comparison, the classic random repeated 10-fold cross-validation with the same hyperparameters:\n\n# Classic random repeated 10-fold cross-validation with the same hyperparameters (for comparison)\nfitControl_random &lt;- trainControl(\n   method = \"repeatedcv\",  # 10-fold Crossvalidation\n   number = 10,\n   repeats = 5,            # Repeated five times\n   savePredictions = \"final\",\n   allowParallel = FALSE)\n\nset.seed(1)\nRF_random &lt;- train(X87Sr86Sr ~ ., data = training_rf,\n                   method = \"ranger\", metric = \"RMSE\",\n                   tuneGrid = RF_all$bestTune, trControl = fitControl_random,\n                   num.trees = 500, seed = 1)\n\ncv_compare &lt;- rbind(\n  Random_CV  = postResample(RF_random$pred$pred, RF_random$pred$obs),\n  Spatial_CV = postResample(RF_all$pred$pred, RF_all$pred$obs))\ncv_compare\nwrite.csv(cv_compare, \"Output/cross_validation_random_vs_spatial.csv\")",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "4. Predictor selection and cross-validation"
+    ]
+  },
+  {
+    "objectID": "04-cross-validation.html#step-4.7-plot-the-cross-validation-results",
+    "href": "04-cross-validation.html#step-4.7-plot-the-cross-validation-results",
+    "title": "4. Predictor selection and cross-validation",
+    "section": "Step 4.7: Plot the cross-validation results",
+    "text": "Step 4.7: Plot the cross-validation results\n\n\nShow the plotting code\ncv_pred &lt;- rbind(data.frame(RF_random$pred[, c(\"obs\", \"pred\")], CV = \"Random 10-fold CV (repeated 5 times)\"),\n                 data.frame(RF_all$pred[, c(\"obs\", \"pred\")],    CV = \"Spatial-block 10-fold CV\"))\n\n# Axis limits adapted to the South African 87Sr/86Sr range\nsr_lim &lt;- range(c(cv_pred$obs, cv_pred$pred))\n\np1 &lt;- ggplot(cv_pred, aes(x = obs, y = pred)) +\n    geom_bin_2d(binwidth = 0.001) +\n    geom_abline(slope = 1, intercept = 0, linetype = 3) +\n    geom_smooth(method = \"lm\", colour = \"black\") +\n    scale_fill_viridis_c(option = \"magma\", direction = -1, trans = \"sqrt\") +\n    coord_cartesian(xlim = sr_lim, ylim = sr_lim) +\n    facet_wrap(~ CV) +\n    labs(fill = \"Count\") +\n    xlab(\"87Sr/86Srobs\") +\n    ylab(\"87Sr/86Srmod\")\n\np2 &lt;- ggplot(cv_pred, aes(x = obs, y = pred - obs)) +\n    geom_bin_2d(binwidth = 0.001, show.legend = FALSE) +\n    scale_fill_viridis_c(option = \"magma\", direction = -1, trans = \"sqrt\") +\n    facet_wrap(~ CV) +\n    xlab(\"87Sr/86Srobs\") +\n    ylab(\"Residuals\")\n\np3 &lt;- p1 / p2 + plot_annotation(\n    title = \"Model performance: random vs. spatial cross-validation\"\n  )\np3\nggsave(\"Output/FigS2.pdf\", p3, width = 14, height = 12)\n\n\n\n\n\nSame model, same data: R² = 0.77 with random CV, 0.71 with spatial CV\n\n\nWhere are the large errors of the spatial cross-validation?\n\n\nShow the code\n# Map of the spatial-CV residuals (observed - predicted) at each site\nres_sp &lt;- RF_all$pred[order(RF_all$pred$rowIndex), ]\nsites_sf$resid_spatial &lt;- res_sp$obs - res_sp$pred\n\np_res &lt;- ggplot() +\n  geom_sf(data = za_p, fill = \"grey95\", colour = \"grey60\") +\n  geom_sf(data = sites_sf[order(abs(sites_sf$resid_spatial)), ], aes(colour = resid_spatial), size = 1.5) +\n  scale_colour_gradient2(low = \"blue\", mid = \"grey90\", high = \"red\", midpoint = 0,\n                         limits = c(-0.015, 0.015), oob = scales::squish, name = \"obs - pred\") +\n  coord_sf(xlim = range(sr_agg$X) + c(-1e5, 1e5), ylim = range(sr_agg$Y) + c(-1e5, 1e5)) +\n  ggtitle(\"Spatial-CV residuals\") +\n  theme_minimal()\np_res\nggsave(\"Output/FigS7_residual_map.pdf\", p_res, width = 8, height = 7)\n\n\n\n\n\nSpatial-CV residuals (observed − predicted) at each site\n\n\n\n📏 Think · Pair · Share: random vs. spatial CV\nSame model, same data: random CV R² = 0.77 (RMSE 0.0040), spatial-block CV R² = 0.71 (RMSE 0.0045). Which one would you report in a paper, and why?\n\n\n💭 Think 1 min\n\ncv_compare\n\nOn your own, compare the fold maps and the distance plot: test sites sit 6 km (random) vs. 84 km (spatial) from the training data, and map pixels sit 84 km away.\n\n\n🤝 Pair 3 min\nWith your neighbour:\n\nRandom CV barely changes between predictor sets; spatial CV separates them. What does that tell you about OOB error and VSURF?\nWhat are the weaknesses of spatial CV?\n\n\n\n📣 Share 5 min\nTell the room:\n\nWhen would random CV be acceptable?\nHow would you design spatial folds for your own study area and sampling design?\n\n\n\n\n\n\n\n\n\n\nThings you might have noticed\n\n\n\n\n\n🎲 Problems with random CV\n\nTest sites sit next to training sites: it measures interpolation, not prediction in unsampled regions.\nIt is over-optimistic, and it rewards covariates that act as coordinates (the coarse aerosol layers).\nIt cannot tell a good predictor set from a bad one, and the OOB error and VSURF share this blind spot.\n\n🧩 Problems with spatial CV\n\nResults depend on the number and size of the blocks (Exercise 3). k-means blocks are unequal: one holds most of the Cape sites.\nIt can be pessimistic if the blocks force more extrapolation than the map needs.\nWithin-block R² is low because each block spans a narrow Sr range: pool the predictions (as in Step 4.7).\n\n✅ When random CV is OK\n\nDense, even sampling, where map pixels are as close to the data as the test sites are.\nThe goal is interpolation inside the sampled area.\n\n📐 Designing your folds\n\nMatch the CV distance distribution to the prediction distances (Meyer & Pebesma 2022; CAST::knndm(), the blockCV package).\nUse the same CV for predictor selection, tuning and reporting, and show the residual map.\nBoth CVs under-predict the radiogenic sites (&gt; 0.73).\n\nTake-home: report the spatial CV. It is the honest estimate for the places your animals actually came from.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "4. Predictor selection and cross-validation"
+    ]
+  },
+  {
+    "objectID": "04-cross-validation.html#exercises",
+    "href": "04-cross-validation.html#exercises",
+    "title": "4. Predictor selection and cross-validation",
+    "section": "Exercises",
+    "text": "Exercises\n\nExercise 1: VSURF step\n\n\n\n\n\n\n🧩 Your turn\n\n\n\nUse vsurf_step &lt;- \"pred\" (as in the global script) instead of \"interp\" in Step 4.3, then re-run Steps 4.4 to 4.7.\n\nHow many variables are kept?\nDoes the spatial CV change?\n\n\n\n\n\nExercise 2: pruning tolerance\n\n\n\n\n\n\n🧩 Your turn\n\n\n\nChange tol in Step 4.4 to 0.005 and to 0.05.\n\nHow many variables are kept?\nHow does the spatial CV change?\n\n\n\n\n\n\n\n\n\nHint\n\n\n\n\n\nLook at pruning_path after each run: it lists which variable was removed at each step and the spatial-CV RMSE.\n\n\n\n\n\nExercise 3: spatial folds\n\n\n\n\n\n\n🧩 Your turn\n\n\n\nChange the number of spatial clusters (centers = 10 in Step 4.2) to 5 or 20.\n\nHow do the distance distributions change?\nHow does the spatial R² change?\n\n\n\n\n\n\n\n\n\nThings to look for\n\n\n\n\n\nFewer, larger blocks push the test sites further from the training data, so the spatial R² usually drops. More, smaller blocks bring the CV distances closer to the random CV. The best design is the one whose distances look most like the map’s.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "4. Predictor selection and cross-validation"
+    ]
+  },
+  {
+    "objectID": "04-cross-validation.html#summary",
+    "href": "04-cross-validation.html#summary",
+    "title": "4. Predictor selection and cross-validation",
+    "section": "Summary",
+    "text": "Summary\n\n\n\n\n\n\nKey takeaways\n\n\n\n\nRandom CV measures interpolation between nearby sites; spatial CV measures prediction in new regions.\nOOB error and VSURF behave like random CV, so we prune and tune with spatial CV.\nThe final model keeps seven predictors, with R² = 0.71 in spatial CV.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "4. Predictor selection and cross-validation"
+    ]
+  },
+  {
+    "objectID": "02-covariates.html",
+    "href": "02-covariates.html",
+    "title": "2. Covariates",
+    "section": "",
+    "text": "In this section\n\n\n\n\nYou’ll learn: which covariates can predict bioavailable ⁸⁷Sr/⁸⁶Sr, and why\nYou’ll need: Project_Raster/clipped_za/\nTime: about 20 minutes",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "2. Covariates"
+    ]
+  },
+  {
+    "objectID": "02-covariates.html#overview",
+    "href": "02-covariates.html#overview",
+    "title": "2. Covariates",
+    "section": "Overview",
+    "text": "Overview\nWe now load the covariates used to train the random forest. They describe the geological, environmental and climatic processes that control bioavailable ⁸⁷Sr/⁸⁶Sr: the sources of Sr (bedrock, dust, sea salt), how it is mixed and weathered (soils, climate, sediments) and how it is taken up (vegetation).\n\n\n\n\n\n\nSame projection, same grid\n\n\n\nThe rasters must share the same projection and resolution, and be snapped to each other. This preprocessing is slow for global layers, so it has been done for you: the global Eckert IV 1 km rasters (OSF) are already clipped to South Africa in Project_Raster/clipped_za.\n\n\n\n\n\nSome of the covariates: bedrock model ⁸⁷Sr/⁸⁶Sr, geological age and distance to the coast\n\n\n\n\n\n\n\n\nThe full list of global covariates\n\n\n\n\n\n\nCompared with the global script, a few global layers are not in the South Africa set (Bouguer anomaly, permafrost, mean annual temperature and the other WorldClim variables except wind). Permafrost is irrelevant in South Africa anyway!",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "2. Covariates"
+    ]
+  },
+  {
+    "objectID": "02-covariates.html#step-2.2-geological-variables",
+    "href": "02-covariates.html#step-2.2-geological-variables",
+    "title": "2. Covariates",
+    "section": "Step 2.2: Geological variables",
+    "text": "Step 2.2: Geological variables\n\n\nShow the code\n###Global median, Q1 and Q3 bedrock model 87Sr/86Sr (Bataille et al. 2020)\n###(in this clipped set, r.m1 is identical to r.srsrq1)\n\nr.m1 &lt;- terra::rast(file.path(raster_dir, \"r.m1.tif\"))\nr.srsrq1 &lt;- terra::rast(file.path(raster_dir, \"r.srsrq1.tif\"))\nr.srsrq3 &lt;- terra::rast(file.path(raster_dir, \"r.srsrq3.tif\"))\n\n###Global mean, min and max geological age in Myrs from the GLiM Hartman and Moosdorf 2012 and Bataille et al. 2020 for text to numerica age field converstion\n\nr.meanage_geol &lt;- terra::rast(file.path(raster_dir, \"r.meanage_geol.tif\"))\nr.minage_geol &lt;- terra::rast(file.path(raster_dir, \"r.minage_geol.tif\"))\nr.maxage_geol &lt;- terra::rast(file.path(raster_dir, \"r.maxage_geol.tif\"))\n\n###Global mean of terrane age in Myrs (Mooney et al. 1988)\n\nr.age &lt;- terra::rast(file.path(raster_dir, \"r.age.tif\"))\n\n###Global unconsolidated sediments type (see publications for each class) (Börker et al., 2018)\n\nr.GUM &lt;- terra::rast(file.path(raster_dir, \"r.GUM.tif\"))\n\n###Global elevation in m ((Jarvis et al., 2008) )\nr.elevation &lt;- terra::rast(file.path(raster_dir, \"r.elevation.tif\"))\n\n###NEW (regional) - Geological map of South Africa 1:1 000 000 (Council for Geoscience)\n###Categorical: each value is a lithostratigraphic unit (field UQ_SACS_NO of the attribute table)\nr.geomap &lt;- terra::rast(file.path(raster_dir, \"r.geomap.tif\"))",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "2. Covariates"
+    ]
+  },
+  {
+    "objectID": "02-covariates.html#step-2.3-climate-variables",
+    "href": "02-covariates.html#step-2.3-climate-variables",
+    "title": "2. Covariates",
+    "section": "Step 2.3: Climate variables",
+    "text": "Step 2.3: Climate variables\n\n\nShow the code\n### Mean annual precipitation (mm/yr) (Harris et al., 2020)\n\nr.map &lt;- terra::rast(file.path(raster_dir, \"r.map.tif\"))\n\n###Global Aridity Index Aridity Index &lt;-  Mean annual precipitation÷ Mean annual evapotranspiration (Trabuco & Zomer, 2019)\n\nr.ai &lt;- terra::rast(file.path(raster_dir, \"r.ai.tif\"))\n\n### Global Potential Evapo-Transpiration (mm day-1) (Trabuco & Zomer, 2019)\nr.pet &lt;- terra::rast(file.path(raster_dir, \"r.pet.tif\"))\n\n### Potential evapotranspiration, climatology version (mm/yr) [CHECK REFERENCE - not in the global script]\nr.pet_clim &lt;- terra::rast(file.path(raster_dir, \"r.pet_clim.tif\"))\n\n###World clim data (wind speed, m/s)\n\nr.wind  &lt;- terra::rast(file.path(raster_dir, \"r.wind.tif\"))",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "2. Covariates"
+    ]
+  },
+  {
+    "objectID": "02-covariates.html#step-2.4-atmospheric-deposition-variables",
+    "href": "02-covariates.html#step-2.4-atmospheric-deposition-variables",
+    "title": "2. Covariates",
+    "section": "Step 2.4: Atmospheric deposition variables",
+    "text": "Step 2.4: Atmospheric deposition variables\n\n\n\n\n\n\nCoarse layers\n\n\n\nThese layers come from global atmospheric models with a coarse resolution (~1 to 2 degrees). They have been resampled to 1 km but, inside a single country, they are smooth gradients (you can see the large “blocks” if you plot them). We will come back to this in Step 3.5.\n\n\n\n\nShow the code\n###Multi-models average of dust deposition (g/m²/year) (Chien et al., 2016; Brahney et al., 2015)\n\nr.dust &lt;- terra::rast(file.path(raster_dir, \"r.dust.tif\"))\n\n###Simulation of sea salt aerosol deposition (g/m2/year) (Chien et al., 2016)\n\nr.salt &lt;- terra::rast(file.path(raster_dir, \"r.salt.tif\"))\n\n###Simulation of distance (distance to the coastline)\n\nr.distance &lt;- terra::rast(file.path(raster_dir, \"r.distance.tif\"))\n\n###Volcanos (S) (kg/m2/s) (Brahney et al., 2015)\n\nr.volc &lt;- terra::rast(file.path(raster_dir, \"r.volc.tif\"))\n\n###Black carbon deposition (kg/m2/s) (Chien et al., 2016)\n\nr.fire &lt;- terra::rast(file.path(raster_dir, \"r.fire.tif\"))\n\n### Fossil Fuel (Black Carbon) (kg/m2/s) (Chien et al., 2016)\nr.foss &lt;- terra::rast(file.path(raster_dir, \"r.foss.tif\"))\n\n### Biofuel and primary biogenic particle deposition (kg/m2/s) [CHECK REFERENCE - not in the global script; presumably same model set as above (Chien et al., 2016)]\nr.biofuels &lt;- terra::rast(file.path(raster_dir, \"r.biofuels.tif\"))\nr.biogenic &lt;- terra::rast(file.path(raster_dir, \"r.biogenic.tif\"))",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "2. Covariates"
+    ]
+  },
+  {
+    "objectID": "02-covariates.html#step-2.5-soil-properties",
+    "href": "02-covariates.html#step-2.5-soil-properties",
+    "title": "2. Covariates",
+    "section": "Step 2.5: Soil properties",
+    "text": "Step 2.5: Soil properties\n\n\nShow the code\n### Downloaded from SoilGrids for 5cm to 15cm soil depth include\n\n###Clay fraction (%), ph, Cation Exchange Capacity (cmol+ /kg) , bulk density, organic carbon content (Hengl et al., 2021)\nr.clay &lt;- terra::rast(file.path(raster_dir, \"r.clay.tif\"))\nr.ph &lt;- terra::rast(file.path(raster_dir, \"r.ph.tif\"))\nr.cec &lt;- terra::rast(file.path(raster_dir, \"r.cec.tif\"))\nr.bulk &lt;- terra::rast(file.path(raster_dir, \"r.bulk.tif\"))\nr.ocs &lt;- terra::rast(file.path(raster_dir, \"r.ocs.tif\"))\nr.w0033 &lt;- terra::rast(file.path(raster_dir, \"r.w0033.tif\"))\nr.w1500 &lt;- terra::rast(file.path(raster_dir, \"r.w1500.tif\"))\nr.w0010_30 &lt;- terra::rast(file.path(raster_dir, \"r.w0010_30.tif\"))\n\n###Soil organic content, organic carbon density and nitrogen content between 5-15cm in soil (Hengl et al., 2023)\n\nr.soc &lt;- terra::rast(file.path(raster_dir, \"r.soc.tif\"))\nr.ocd &lt;- terra::rast(file.path(raster_dir, \"r.ocd.tif\"))\nr.nitrogen &lt;- terra::rast(file.path(raster_dir, \"r.nitrogen.tif\"))\n\n###Global soil moisture map(Guevara et al., 2020)\nr.sw &lt;- terra::rast(file.path(raster_dir, \"r.sw.tif\"))\n\n###Global wetland(Fluet-Chouinard et al., 2023)\nr.wetland &lt;- terra::rast(file.path(raster_dir, \"r.wetland.tif\"))\n\n### Phosphorus fertilizer application [CHECK REFERENCE - not in the global script]\nr.pfert &lt;- terra::rast(file.path(raster_dir, \"r.pfert.tif\"))",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "2. Covariates"
+    ]
+  },
+  {
+    "objectID": "02-covariates.html#step-2.6-african-soil-chemistry-new-regional",
+    "href": "02-covariates.html#step-2.6-african-soil-chemistry-new-regional",
+    "title": "2. Covariates",
+    "section": "Step 2.6: African soil chemistry (NEW, regional)",
+    "text": "Step 2.6: African soil chemistry (NEW, regional)\niSDA Africa soil maps, originally at 30 m and aggregated to 1 km (Hengl et al., 2021, Scientific Reports 11: 6130). Two depths: .0 = 0–20 cm and .20 = 20–50 cm. Extractable elements are in ppm (Mehlich-3 extraction); eCEC = effective cation exchange capacity (cmol+/kg); texture = USDA texture class.\n\n\nShow the code\n###Extractable Ca, Mg, K (major cations of the exchange complex, controls on Sr)\nr.africa.Ca.0 &lt;- terra::rast(file.path(raster_dir, \"r.africa.Ca.0.tif\"))\nr.africa.Ca.20 &lt;- terra::rast(file.path(raster_dir, \"r.africa.Ca.20.tif\"))\nr.africa.Mg.0 &lt;- terra::rast(file.path(raster_dir, \"r.africa.Mg.0.tif\"))\nr.africa.Mg.20 &lt;- terra::rast(file.path(raster_dir, \"r.africa.Mg.20.tif\"))\nr.africa.K.0 &lt;- terra::rast(file.path(raster_dir, \"r.africa.K.0.tif\"))\nr.africa.K.20 &lt;- terra::rast(file.path(raster_dir, \"r.africa.K.20.tif\"))\n\n###Extractable Al, Fe (weathering intensity), P, S, Zn\nr.africa.Al.0 &lt;- terra::rast(file.path(raster_dir, \"r.africa.Al.0.tif\"))\nr.africa.Al.20 &lt;- terra::rast(file.path(raster_dir, \"r.africa.Al.20.tif\"))\nr.africa.Fe.0 &lt;- terra::rast(file.path(raster_dir, \"r.africa.Fe.0.tif\"))\nr.africa.Fe.20 &lt;- terra::rast(file.path(raster_dir, \"r.africa.Fe.20.tif\"))\nr.africa.P.0 &lt;- terra::rast(file.path(raster_dir, \"r.africa.P.0.tif\"))\nr.africa.P.20 &lt;- terra::rast(file.path(raster_dir, \"r.africa.P.20.tif\"))\nr.africa.S.0 &lt;- terra::rast(file.path(raster_dir, \"r.africa.S.0.tif\"))\nr.africa.S.20 &lt;- terra::rast(file.path(raster_dir, \"r.africa.S.20.tif\"))\nr.africa.Zn.0 &lt;- terra::rast(file.path(raster_dir, \"r.africa.Zn.0.tif\"))\nr.africa.Zn.20 &lt;- terra::rast(file.path(raster_dir, \"r.africa.Zn.20.tif\"))\n\n###Effective cation exchange capacity\nr.africa.eCEC.0 &lt;- terra::rast(file.path(raster_dir, \"r.africa.eCEC.0.tif\"))\nr.africa.eCEC.20 &lt;- terra::rast(file.path(raster_dir, \"r.africa.eCEC.20.tif\"))\n\n###Sand, silt and texture class\nr.africa.sand.0 &lt;- terra::rast(file.path(raster_dir, \"r.africa.sand.0.tif\"))\nr.africa.sand.20 &lt;- terra::rast(file.path(raster_dir, \"r.africa.sand.20.tif\"))\nr.africa.silt.0 &lt;- terra::rast(file.path(raster_dir, \"r.africa.silt.0.tif\"))\nr.africa.silt.20 &lt;- terra::rast(file.path(raster_dir, \"r.africa.silt.20.tif\"))\nr.africa.texture.0 &lt;- terra::rast(file.path(raster_dir, \"r.africa.texture.0.tif\"))\nr.africa.texture.20 &lt;- terra::rast(file.path(raster_dir, \"r.africa.texture.20.tif\"))",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "2. Covariates"
+    ]
+  },
+  {
+    "objectID": "02-covariates.html#step-2.7-vegetation-new-regional",
+    "href": "02-covariates.html#step-2.7-vegetation-new-regional",
+    "title": "2. Covariates",
+    "section": "Step 2.7: Vegetation (NEW, regional)",
+    "text": "Step 2.7: Vegetation (NEW, regional)\n\n###Vegetation map of South Africa, Lesotho and Swaziland (Mucina & Rutherford, 2006; SANBI VegMap)\n###Categorical: each value is a vegetation unit (field T_Name of the attribute table)\nr.vegmap &lt;- terra::rast(file.path(raster_dir, \"r.vegmap.tif\"))",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "2. Covariates"
+    ]
+  },
+  {
+    "objectID": "02-covariates.html#step-2.8-neighbourhood-geology-new",
+    "href": "02-covariates.html#step-2.8-neighbourhood-geology-new",
+    "title": "2. Covariates",
+    "section": "Step 2.8: Neighbourhood geology (NEW)",
+    "text": "Step 2.8: Neighbourhood geology (NEW)\nThe bedrock ⁸⁷Sr/⁸⁶Sr model (r.srsrq1) and the age of the geological units (r.meanage_geol) describe the rock directly under each 1 km pixel, with sharp boundaries between units. But bioavailable Sr at a site does not come only from the rock under it:\n\nsoils form on sediments, colluvium and alluvium transported from the surrounding hills;\ndust and runoff mix material from the surrounding area;\nplants and animals integrate Sr over their root zone or home range;\nthe sample coordinates and the geological contacts both have location errors of hundreds of metres to kilometres.\n\nTo represent this, we compute the mean of the bedrock ⁸⁷Sr/⁸⁶Sr and of the geological age within circles of 5, 10 and 25 km around each pixel (a moving-window or “focal” mean). The random forest can then learn at which scale the geology best predicts bioavailable ⁸⁷Sr/⁸⁶Sr.\n\nfocal_dir &lt;- \"Project_Raster/neighbourhood\"\ndir.create(focal_dir, showWarnings = FALSE)\n\nfocal_names &lt;- c()\nfor (v in c(\"r.srsrq1\", \"r.meanage_geol\")) {\n  for (km in c(5, 10, 25)) {\n    name &lt;- sprintf(\"%s.f%02d\", v, km)               # e.g. r.srsrq1.f05 = mean within 5 km\n    file &lt;- file.path(focal_dir, paste0(name, \".tif\"))\n    if (!file.exists(file)) {\n      r &lt;- get(v)\n      w &lt;- focalMat(r, km * 1000, type = \"circle\")   # circular window, radius in metres\n      w[w &gt; 0] &lt;- 1                                   # simple (unweighted) mean\n      f &lt;- focal(r, w = w, fun = \"mean\", na.rm = TRUE)\n      f &lt;- mask(f, r)                                 # keep the land mask of the original raster\n      writeRaster(f, file, overwrite = TRUE)\n    }\n    assign(name, terra::rast(file))\n    focal_names &lt;- c(focal_names, name)\n  }\n}\nfocal_names\nplot(c(r.srsrq1, r.srsrq1.f05, r.srsrq1.f10, r.srsrq1.f25), nc = 4)\n\n\n\n\nBedrock ⁸⁷Sr/⁸⁶Sr at the pixel scale and averaged within 5, 10 and 25 km\n\n\n\n\n\n\n\n\nWhy stop at 25 km?\n\n\n\nIn the training data, adding these six layers improves the spatial cross-validation R² from ~0.5 to ~0.7. Going beyond 25 km does not help: at 50 km the layers become so smooth that they behave like coordinates.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "2. Covariates"
+    ]
+  },
+  {
+    "objectID": "02-covariates.html#step-2.9-put-all-covariates-in-a-stack",
+    "href": "02-covariates.html#step-2.9-put-all-covariates-in-a-stack",
+    "title": "2. Covariates",
+    "section": "Step 2.9: Put all covariates in a stack",
+    "text": "Step 2.9: Put all covariates in a stack\nInstead of handling each raster separately, we store all of them in a single stack. predictor_names is the list of all the covariates we just loaded.\n\npredictor_names &lt;- c(\"r.m1\", \"r.srsrq1\", \"r.srsrq3\",\n                     \"r.meanage_geol\", \"r.minage_geol\", \"r.maxage_geol\",\n                     \"r.age\", \"r.GUM\", \"r.elevation\", \"r.geomap\",\n                     \"r.map\", \"r.ai\", \"r.pet\", \"r.pet_clim\", \"r.wind\",\n                     \"r.dust\", \"r.salt\", \"r.distance\", \"r.volc\", \"r.fire\", \"r.foss\", \"r.biofuels\", \"r.biogenic\",\n                     \"r.clay\", \"r.ph\", \"r.cec\", \"r.bulk\", \"r.ocs\", \"r.w0033\", \"r.w1500\", \"r.w0010_30\",\n                     \"r.soc\", \"r.ocd\", \"r.nitrogen\", \"r.sw\", \"r.wetland\", \n                     \"r.africa.Ca.0\", \"r.africa.Ca.20\", \"r.africa.Mg.0\", \"r.africa.Mg.20\",\n                     \"r.africa.K.0\", \"r.africa.K.20\", \"r.africa.Al.0\", \"r.africa.Al.20\",\n                     \"r.africa.Fe.0\", \"r.africa.Fe.20\", \"r.africa.P.0\", \"r.africa.P.20\",\n                     \"r.africa.S.0\", \"r.africa.S.20\", \"r.africa.Zn.0\", \"r.africa.Zn.20\",\n                     \"r.africa.eCEC.0\", \"r.africa.eCEC.20\",\n                     \"r.africa.sand.0\", \"r.africa.sand.20\", \"r.africa.silt.0\", \"r.africa.silt.20\",\n                     \"r.africa.texture.0\", \"r.africa.texture.20\",\n                     \"r.vegmap\",\n                     focal_names)\n\n# Convert character names to actual objects dynamically and combine into a single SpatRaster\nstack_all &lt;- do.call(c, lapply(predictor_names, get))\nnames(stack_all) &lt;- predictor_names\n\n# The two categorical maps come with an attribute table (unit names). For the\n# regression matrix we only need the numeric code of each class, so we drop the\n# attribute table (otherwise the unit names, with spaces and apostrophes, end up\n# in the table and break the median aggregation)\nfor (p in c(\"r.geomap\", \"r.vegmap\")) levels(stack_all[[p]]) &lt;- NULL\n\n# Have a look at some of them\nplot(stack_all[[c(\"r.srsrq1\", \"r.meanage_geol\", \"r.distance\", \"r.map\", \"r.dust\", \"r.africa.Ca.0\")]])\n\n\n🌍 Think · Pair · Share: covariates for South Africa\nThe script loads ~60 rasters: global layers we use everywhere, plus layers that only exist here. Which covariates help in South Africa that we don’t have anywhere else?\n\n\n💭 Think 2 min\n\nplot(stack_all[[c(\"r.srsrq1\", \"r.distance\", \"r.africa.Ca.0\", \"r.vegmap\")]])\n\nOn your own, scroll through Steps 2.2–2.8 and list every covariate marked NEW (regional).\n\n\n🤝 Pair 3 min\nWith your neighbour, for each regional covariate:\n\nWhich part of the Sr cycle does it describe: source rock, weathering, atmospheric input or plant uptake?\nDo you expect the model to pick it? Could it cause trouble?\n\n\n\n📣 Share 3 min\nThink about your own isoscape:\n\nWhich covariates would you use, and why?\nWhich regional datasets exist for your study area?\n\n\n\n\n\n\n\n\n\n\nThings you might have noticed\n\n\n\n\n\n🧭 Only in this South African model\n\nThe 1:1M geological map (Council for Geoscience): r.geomap\niSDA Africa soil chemistry: extractable Ca, Mg, K, Al, Fe, P, S, Zn, eCEC and texture at 0–20 and 20–50 cm\nThe SANBI vegetation map (Mucina & Rutherford 2006): r.vegmap\nNeighbourhood geology: mean bedrock ⁸⁷Sr/⁸⁶Sr and age within 5, 10 and 25 km. Spatial CV R² goes from ~0.5 to ~0.7\n\n🔬 Link each one to a process\n\nExtractable Ca, Mg: the exchangeable pool plants draw from; carbonate, calcrete and shell input\nAl, Fe: weathering intensity. Texture: transport and mixing of sediments\nVegetation: climate, rooting depth, biome\n\n⚠️ Not every new layer helps\n\nCategorical maps with hundreds of classes: most classes contain no training site, so they are dropped in Step 3.5.\nThe coarse aerosol models (~1–2°) behave like coordinates inside one country.\nr.africa.Ca.0 made it into the final model; the categorical maps did not.\n\n🧰 For your own isoscape\n\nChoose by process (source × mixing × uptake), not by availability.\nMatch the resolution to your sampling scale, and cover the whole prediction area.\nLook for regional data: detailed geological maps, airborne radiometric surveys (K, Th, U), soil geochemistry, loess and till maps.\n\nTake-home: a regional covariate is worth adding only if it encodes a Sr process and your training sites sample its range.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "2. Covariates"
+    ]
+  },
+  {
+    "objectID": "02-covariates.html#summary",
+    "href": "02-covariates.html#summary",
+    "title": "2. Covariates",
+    "section": "Summary",
+    "text": "Summary\n\n\n\n\n\n\nKey takeaways\n\n\n\n\nCovariates describe the sources, mixing and uptake of Sr.\nRegional datasets (soil chemistry, detailed geology) can add real information, but only if the training sites cover them.\nBioavailable Sr integrates more than the rock under the pixel: neighbourhood geology captures this.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "2. Covariates"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "",
+    "text": "Welcome to Module 2 of our workshop, “Strontium isotope geolocation for terrestrial ecology,” held at The 14th International Conference on the Applications of Stable Isotope Techniques to Ecological Studies (ISOECOL 2026) in Hong Kong!\nIn Module 1, we screened bioavailable ⁸⁷Sr/⁸⁶Sr data with IsoBank and the ARDUOUS template. Today, we use those data to build a bioavailable ⁸⁷Sr/⁸⁶Sr isoscape for South Africa with random forest regression. In Module 3, Megan will use this isoscape to find where painted lady butterflies came from.\n\n\n\n\n\n\nHow to use this site\n\n\n\nEach section of the workshop has its own page, listed in the sidebar on the left. We’ll go through them together, but you’re welcome to work at your own pace. If you get lost, use the sidebar or the search box to find the section we’re on.\nThroughout the pages you’ll find 🦋 Think · Pair · Share breaks. Stop there, think on your own, discuss with your neighbour, then share with the room. Open the “Things you might have noticed” box only after the discussion!\n\n\n\n\n\nThe random forest isoscape workflow (Bataille et al. 2020)",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "index.html#welcome",
+    "href": "index.html#welcome",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "",
+    "text": "Welcome to Module 2 of our workshop, “Strontium isotope geolocation for terrestrial ecology,” held at The 14th International Conference on the Applications of Stable Isotope Techniques to Ecological Studies (ISOECOL 2026) in Hong Kong!\nIn Module 1, we screened bioavailable ⁸⁷Sr/⁸⁶Sr data with IsoBank and the ARDUOUS template. Today, we use those data to build a bioavailable ⁸⁷Sr/⁸⁶Sr isoscape for South Africa with random forest regression. In Module 3, Megan will use this isoscape to find where painted lady butterflies came from.\n\n\n\n\n\n\nHow to use this site\n\n\n\nEach section of the workshop has its own page, listed in the sidebar on the left. We’ll go through them together, but you’re welcome to work at your own pace. If you get lost, use the sidebar or the search box to find the section we’re on.\nThroughout the pages you’ll find 🦋 Think · Pair · Share breaks. Stop there, think on your own, discuss with your neighbour, then share with the room. Open the “Things you might have noticed” box only after the discussion!\n\n\n\n\n\nThe random forest isoscape workflow (Bataille et al. 2020)",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "index.html#what-youll-learn",
+    "href": "index.html#what-youll-learn",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "What you’ll learn",
+    "text": "What you’ll learn\nBy the end of this module you will be able to:\n\nBuild a regression matrix from bioavailable ⁸⁷Sr/⁸⁶Sr data and geospatial covariates\nChoose covariates using process knowledge, and deal with correlated covariates\nSelect predictors and evaluate a random forest model with random and spatial cross-validation\nInterpret variable importance and partial dependence plots\nMap the isoscape and its uncertainty with a quantile random forest",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "index.html#schedule",
+    "href": "index.html#schedule",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "Schedule",
+    "text": "Schedule\n\n\n\nTime\nSection\n\n\n\n\nIn advance\nBefore the workshop\n\n\n11:15 – 12:30\n1. Training data · 2. Covariates · 3. Regression matrix\n\n\n12:30 – 13:30\nLunch (VSURF and the model run while we eat)\n\n\n13:30 – 14:30\n4. Cross-validation · 5. Interpretation · 6. Isoscape",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "index.html#before-the-workshop",
+    "href": "index.html#before-the-workshop",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "Before the workshop",
+    "text": "Before the workshop\n\n\n\n\n\n\nPlease set up before you arrive\n\n\n\n\nInstall a recent version of R.\nInstall RStudio Desktop.\nRun the code below in the RStudio console to install the packages we’ll use.\nDownload the workshop data (below). The rasters are ~350 MB, so please don’t wait for the conference Wi-Fi!\n\n\n\n\ninstall.packages(c(\"terra\", \"sf\", \"rnaturalearth\", \"rnaturalearthdata\", \"caret\", \"VSURF\",\n                   \"ranger\", \"corrplot\", \"viridis\", \"patchwork\", \"ggplot2\", \"pdp\", \"tidyverse\"))\n\n\nGet the data and the script\n\nData and script: everything is in the Module2_isoscape folder of this site’s repository. On the repository page, click Code → Download ZIP, unzip it and keep the Module2_isoscape folder (~400 MB). The data are also on PURR.\nScript only: download Script_RF_isoscape_SouthAfrica.Rmd. Every code chunk on this site comes from this script.\n\n\n\nFolder organisation\nModule2_isoscape/\n├─ Script_RF_isoscape_SouthAfrica.Rmd\n├─ Data/\n│   └─ SouthAfrica_bioavailable_Sr_ARDUOUS.csv\n├─ Project_Raster/\n│   ├─ clipped_za/      (~60 rasters, Eckert IV, 1 km)\n│   └─ neighbourhood/   (created by the script)\n└─ Output/              (created by the script; pre-computed results are included)\n\n\n\n\n\n\nRunning the code\n\n\n\n\nOpen Script_RF_isoscape_SouthAfrica.Rmd in RStudio.\nSession → Set Working Directory → To Source File Location.\nRun the setup chunk: it installs any missing packages.\nRun chunk by chunk (Ctrl+Shift+Enter) and look at each output. You can also copy the code from this site into the console.\n\nThe whole script takes ~15–20 min on a laptop. The two slow steps are VSURF (~8 min, Step 4.3) and the isoscape prediction (~5 min, Step 5.2). If your laptop is slow, load the pre-computed results from Output/.\n\n\n\n\n\n\n\n\nThe figures on this site come from a pre-computed run of the script. Your results should be very close, but small differences are normal (random seeds, package versions).",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "index.html#more-resources",
+    "href": "index.html#more-resources",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "More resources",
+    "text": "More resources\n\nBataille, C. P., Crowley, B. E., Wooller, M. J., & Bowen, G. J. (2020). Advances in global bioavailable strontium isoscapes. Palaeogeography, Palaeoclimatology, Palaeoecology, 555, 109849. https://doi.org/10.1016/j.palaeo.2020.109849\nGlobal predictor rasters (Eckert IV, 1 km): https://osf.io/a2r7g/\nARDUOUS template: https://www.nature.com/articles/s41597-026-06643-3\nARDUOUS dataset: https://doi.isoarch.org/10.48530/isoarch.2024.002",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "index.html#getting-help",
+    "href": "index.html#getting-help",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "Getting help",
+    "text": "Getting help\nDuring the workshop, put up your hand or ask Clement, Megan, or Chris for help. Code that does not run? Compare with your neighbour first, then ask. Afterwards, contact Clement Bataille (Purdue University).",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html",
+    "href": "01-training-data.html",
+    "title": "1. Training data",
+    "section": "",
+    "text": "In this section\n\n\n\n\nYou’ll learn: what our training data contain, and what they mean for the isoscape we can build\nYou’ll need: the Module2_isoscape folder (Before the workshop)\nTime: about 15 minutes",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html#overview",
+    "href": "01-training-data.html#overview",
+    "title": "1. Training data",
+    "section": "Overview",
+    "text": "Overview\nThis script is adapted from Bataille et al. (2020), “Advances in global bioavailable strontium isoscapes”. This version uses South Africa as a case study. Compared with the global version:\n\nTraining data: a harmonised and screened dataset of bioavailable ⁸⁷Sr/⁸⁶Sr in the ARDUOUS format (prepared in Module 1), mostly from plants.\nCovariates: the global Eckert IV 1 km rasters are already clipped to South Africa, so no cropping is needed and everything runs on a laptop.\nNew regional covariates: African soil chemistry (iSDA Africa), the 1:1M geological map of South Africa, the South African vegetation map, and neighbourhood (5, 10, 25 km) means of the bedrock ⁸⁷Sr/⁸⁶Sr and geological age.\nSpatial cross-validation: we compare random and spatial-block cross-validation, and use the spatial one to prune the predictors and tune the model.\n\n\n\n\n\n\n\nMore resources\n\n\n\n\nBataille, C. P., Crowley, B. E., Wooller, M. J., & Bowen, G. J. (2020). Advances in global bioavailable strontium isoscapes. Palaeogeography, Palaeoclimatology, Palaeoecology, 555, 109849. https://doi.org/10.1016/j.palaeo.2020.109849\nGlobal predictor rasters: https://osf.io/a2r7g/",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html#setting-up",
+    "href": "01-training-data.html#setting-up",
+    "title": "1. Training data",
+    "section": "Setting up",
+    "text": "Setting up\n\n# install if necessary\nlist.of.packages &lt;- c(\"terra\", \"sf\", \"rnaturalearth\", \"rnaturalearthdata\", \"caret\", \"VSURF\", \"ranger\", \"corrplot\", \"viridis\", \"patchwork\", \"ggplot2\", \"pdp\")\n\nnew.packages &lt;- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]\n\nif(length(new.packages)) install.packages(new.packages)\n\n  library(parallel)    # detectCores() (part of base R)\n  library(terra)\n  library(sf)\n  library(viridis)\n  library(rnaturalearth)\n  library(rnaturalearthdata)\n  library(caret)\n  library(VSURF)\n  library(ranger)\n  library(corrplot)\n  library(patchwork)\n  library(ggplot2)\n  library(pdp)\n  library(tidyverse)\n\n# Number of cores used by VSURF (ranger uses all the cores by itself)\nn_cores &lt;- max(detectCores() - 1, 1)  # convention to leave 1 core for OS\n\n# caret runs sequentially here (ranger is already multi-threaded). If a parallel\n# cluster is still registered from a previous session (e.g. registerDoParallel()),\n# caret would try to use it and fail with \"invalid connection\": reset it.\nforeach::registerDoSEQ()\n\n\n#!! Create or use sub folders to keep things tidy!\nmydir &lt;- getwd()\n\ndir.create(file.path(mydir, \"/Output\", fsep = .Platform$file.sep), showWarnings = FALSE)\n\n# Folder with the rasters clipped to South Africa (Eckert IV, 1 km)\n# If you have only the zip file, run the commented line below to unzip it\n# unzip(\"Project_Raster.zip\", exdir = \"Project_Raster\")\nraster_dir &lt;- \"Project_Raster/clipped_za\"\n\n# Projection used for everything in this script (Eckert IV, equal area, metres)\neck4 &lt;- \"+proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs\"",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html#step-1.1-import-the-training-data",
+    "href": "01-training-data.html#step-1.1-import-the-training-data",
+    "title": "1. Training data",
+    "section": "Step 1.1: Import the training data",
+    "text": "Step 1.1: Import the training data\nThe training dataset Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv has already been harmonised and screened for you (this is what we did in Module 1 with the ARDUOUS template).\nThis dataset mostly represents bioavailable ⁸⁷Sr/⁸⁶Sr from plants (608 of 927 records, 66%), complemented by modern fauna with small home ranges (259 records, 28%: rodents, hyraxes, hares, snails, tortoises, small antelopes) and soil leachates (60 records, 6%). It includes 579 distinct sampling locations.\n\n\n\n\n\n\nScreening applied\n\n\n\n\n\n\nonly records within South Africa, with coordinates and 0.700 &lt; ⁸⁷Sr/⁸⁶Sr &lt; 0.800;\nwaters (rivers, groundwater) removed, because they integrate whole catchments;\nhumans, hominins, primates, elephants and ivory, domestic cattle, fish, birds, large and migratory herbivores and large carnivores removed, because their ⁸⁷Sr/⁸⁶Sr does not reflect where they were collected;\nfossil specimens removed (e.g. the Elandsfontein and Sterkfontein/Swartkrans fossil fauna);\nduplicated measurements present in both compilations removed.\n\n\n\n\n\n#Import training data: harmonised and screened bioavailable 87Sr/86Sr dataset for South Africa (ARDUOUS format)\n#Mostly bioavailable Sr data from plants (66%), plus small-home-range fauna (28%) and soils (6%)\n# read.csv() renames the ARDUOUS column \"87Sr86Sr\" to \"X87Sr86Sr\" (R names cannot start with a number)\nsr_orig &lt;- read.csv(\"Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv\")\n\nnrow(sr_orig)\ntable(sr_orig$material_type)\nsummary(sr_orig$X87Sr86Sr)",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html#step-1.2-project-the-data-into-eckert-iv",
+    "href": "01-training-data.html#step-1.2-project-the-data-into-eckert-iv",
+    "title": "1. Training data",
+    "section": "Step 1.2: Project the data into Eckert IV",
+    "text": "Step 1.2: Project the data into Eckert IV\nWe will use the Eckert IV equal-area projection (1 km pixels) for everything.\n\nsr_proj &lt;- st_as_sf(sr_orig, coords = c(\"collection_decimal_longitude\", \"collection_decimal_latitude\"), crs = st_crs(4326), remove = FALSE) %&gt;%\n  st_transform(crs = eck4)\nplot(sr_proj[\"X87Sr86Sr\"], pch = 16, cex = 0.6)\n\n\n\n\nTraining data: 927 records at 579 sites, coloured by sample type",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html#step-1.3-administrative-maps",
+    "href": "01-training-data.html#step-1.3-administrative-maps",
+    "title": "1. Training data",
+    "section": "Step 1.3: Administrative maps",
+    "text": "Step 1.3: Administrative maps\nCountry boundaries for the figures, from Natural Earth, reprojected into Eckert IV.\n\nworld &lt;- ne_countries(scale = \"medium\", returnclass = \"sf\")\nworld_p &lt;- st_as_sf(world, crs = st_crs(4326)) %&gt;%\n  st_transform(crs = eck4)\n# Keep South Africa and neighbouring countries for the figures\nza_p &lt;- world_p[world_p$admin %in% c(\"South Africa\", \"Lesotho\", \"eSwatini\", \"Swaziland\", \"Namibia\", \"Botswana\", \"Zimbabwe\", \"Mozambique\"),]\nplot(st_geometry(za_p))\n\n\n🦋 Think · Pair · Share: a map for a butterfly\nYou want to find where painted ladies (Vanessa cardui) caught in South Africa grew up, from the ⁸⁷Sr/⁸⁶Sr of their wings. What training data and what kind of bioavailable Sr map do you need?\n\n\n💭 Think 2 min\n\ntable(sr_orig$material_type)\n\nOn your own, look at the sample types and the map above.\n\nWhere does a butterfly’s wing Sr come from?\nWhen in its life is it fixed?\n\n\n\n🤝 Pair 3 min\nWith your neighbour:\n\nWhich substrate is the best analogue for a butterfly: soils, plants or small-range fauna?\nWhich records would you keep or drop?\nIs the spatial coverage good enough where your butterflies might come from?\n\n\n\n📣 Share 3 min\nTell the room what map you would build:\n\nAll substrates or plants only?\nOver what extent, at what resolution, and with what uncertainty?\n\n\n\n\n\n\n\n\n\n\nThings you might have noticed\n\n\n\n\n\n🌿 The best substrate\n\nWing Sr is fixed during the larval stage: caterpillars eat host-plant leaves, and adult wing chitin is not remodelled.\nHerbaceous host plants (thistles, mallows, other Asteraceae) are the closest analogue: shallow roots, same Sr pool.\nSoil leachates, deep-rooted trees and small mammals sample other Sr pools or larger areas, and can be offset from host plants.\n\n🗺️ The map you need\n\nA plant-based (or plant-dominated) bioavailable Sr isoscape. Try it in Exercise 1.\nAn extent covering the whole potential natal range. Painted ladies may come from beyond South Africa (Namibia, Botswana, Zimbabwe…).\nA resolution matching the larval home range (~1 km is fine for a caterpillar).\nA pixel-level uncertainty (SD) to feed assignR::pdRaster() in Module 3.\n\n⚠️ Watch out\n\n579 sites, but most are in the south-western Cape: the interior (Karoo, Northern Cape, Limpopo) will be predicted from covariates, not data.\nMixing substrates adds variance: part of the “model error” is a substrate offset.\n\nTake-home: match the isoscape to the organism: the same Sr pool, the same spatial scale, and an extent as large as the question.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html#summary",
+    "href": "01-training-data.html#summary",
+    "title": "1. Training data",
+    "section": "Summary",
+    "text": "Summary\n\n\n\n\n\n\nKey takeaways\n\n\n\n\nThe training data are screened, harmonised bioavailable ⁸⁷Sr/⁸⁶Sr: mostly plants, plus small-range fauna and soils.\nThe sites are strongly clustered in the south-western Cape. Keep this in mind when we evaluate the model.\nThe best isoscape depends on the organism you want to track.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "03-regression-matrix.html",
+    "href": "03-regression-matrix.html",
+    "title": "3. Regression matrix",
+    "section": "",
+    "text": "In this section\n\n\n\n\nYou’ll learn: how to build a clean regression matrix, and what correlated covariates do to a random forest\nYou’ll need: sr_proj (Section 1) and stack_all (Section 2)\nTime: about 30 minutes",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "3. Regression matrix"
+    ]
+  },
+  {
+    "objectID": "03-regression-matrix.html#overview",
+    "href": "03-regression-matrix.html#overview",
+    "title": "3. Regression matrix",
+    "section": "Overview",
+    "text": "Overview\nWe now have a training set (sites with ⁸⁷Sr/⁸⁶Sr in Eckert IV) and covariates in the same projection. We overlay the sites on the maps, extract the value of every covariate under each site, and assemble everything into one regression matrix: one row per site, one column per covariate.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "3. Regression matrix"
+    ]
+  },
+  {
+    "objectID": "03-regression-matrix.html#step-3.1-extract",
+    "href": "03-regression-matrix.html#step-3.1-extract",
+    "title": "3. Regression matrix",
+    "section": "Step 3.1: Extract",
+    "text": "Step 3.1: Extract\n\n\n\n\n\n\nSites on a nodata pixel\n\n\n\nSome sites fall on a pixel with no value, often around coastlines, rivers and lakes. To avoid losing them, the function below takes the value of the nearest non-NA pixel within 5 km.\n\n\n\n\nShow the extraction function\n# Extract the values of all layers under the points; for points falling on a NA\n# pixel, take the nearest non-NA pixel within max_dist (in map units, here metres)\nextract_nearest_non_na &lt;- function(points, r, max_dist = 5000) {\n  v &lt;- terra::extract(r, vect(points), ID = FALSE)\n  xy &lt;- st_coordinates(points)\n  for (i in which(!complete.cases(v))) {\n    # small window of rasters around the point\n    rr &lt;- crop(r, ext(xy[i, 1] - max_dist, xy[i, 1] + max_dist, xy[i, 2] - max_dist, xy[i, 2] + max_dist))\n    vals &lt;- values(rr)\n    cxy &lt;- xyFromCell(rr, 1:ncell(rr))\n    d &lt;- sqrt((cxy[, 1] - xy[i, 1])^2 + (cxy[, 2] - xy[i, 2])^2)\n    # for each layer with a NA, take the value of the nearest non-NA pixel\n    for (j in which(is.na(v[i, ]))) {\n      ok &lt;- !is.na(vals[, j])\n      if (any(ok)) v[i, j] &lt;- vals[ok, j][which.min(d[ok])]\n    }\n  }\n  v\n}\n\n\n\n# For each covariate extract values under points (all covariates at once)\ns_proj &lt;- sr_proj\nextracted &lt;- extract_nearest_non_na(s_proj, stack_all)\n\n# Number of points that still have NA (no valid pixel within 5 km)\nsum(!complete.cases(extracted))\n\ns_xy &lt;- data.frame(st_coordinates(s_proj))",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "3. Regression matrix"
+    ]
+  },
+  {
+    "objectID": "03-regression-matrix.html#step-3.2-amalgamate-into-a-regression-matrix",
+    "href": "03-regression-matrix.html#step-3.2-amalgamate-into-a-regression-matrix",
+    "title": "3. Regression matrix",
+    "section": "Step 3.2: Amalgamate into a regression matrix",
+    "text": "Step 3.2: Amalgamate into a regression matrix\n\n### Create the regression matrix. Append all extracted data and change names of column\n\ns_proj_xy &lt;- data.frame(Latitude = s_proj$collection_decimal_latitude,\n                        Longitude = s_proj$collection_decimal_longitude,\n                        X87Sr86Sr = s_proj$X87Sr86Sr,\n                        s_xy,\n                        as.data.frame(extracted))\n\n# the column names are the names of the covariates (\"r.m1\", \"r.srsrq1\", ...)\ncolnames(s_proj_xy) &lt;- c(\"Latitude\", \"Longitude\", \"X87Sr86Sr\", \"X\", \"Y\", predictor_names)\n\n\n#Save table into directory for future use\nwrite.table(s_proj_xy, \"Output/sr_proj_xy_all.txt\", sep = \"\\t\",col.names = T, row.names = F, quote = F)",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "3. Regression matrix"
+    ]
+  },
+  {
+    "objectID": "03-regression-matrix.html#step-3.3-save-and-reload",
+    "href": "03-regression-matrix.html#step-3.3-save-and-reload",
+    "title": "3. Regression matrix",
+    "section": "Step 3.3: Save and reload",
+    "text": "Step 3.3: Save and reload\nIf you want to skip the extraction (Step 3.1), you can directly load the table.\n\n# Load table from previous chunk\nsr_proj_xy &lt;- read.table(\"Output/sr_proj_xy_all.txt\", sep = \"\\t\", h = T)",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "3. Regression matrix"
+    ]
+  },
+  {
+    "objectID": "03-regression-matrix.html#step-3.4-clean-the-regression-matrix",
+    "href": "03-regression-matrix.html#step-3.4-clean-the-regression-matrix",
+    "title": "3. Regression matrix",
+    "section": "Step 3.4: Clean the regression matrix",
+    "text": "Step 3.4: Clean the regression matrix\n\nRemove NA rows. There shouldn’t be many, thanks to the nearest-pixel extraction.\nHandle outliers. Random forest predictions are not sensitive to outliers, but performance metrics can be. As in the global dataset, we remove values &gt; 0.8.\nOne value per site. Several samples at the same site are not independent, so we aggregate them with the median.\n\n\n# remove NA values cases if any from the dataset\nsr_proj_xy &lt;- sr_proj_xy[!is.na(sr_proj_xy$r.srsrq1),]\n\n# Optional. Filter 'sr_proj_xy' to exclude rows with super high or zero values\nsr_proj_xy1 &lt;- sr_proj_xy[sr_proj_xy$X87Sr86Sr &lt;= 0.8, ]\nsr_proj_xy2 &lt;- sr_proj_xy1[!(sr_proj_xy1$X87Sr86Sr == 0), ]\n\n#Aggregate all samples by latitude and longitude to avoid having multiple samples per site\n#(the categorical maps, r.geomap and r.vegmap, are aggregated with the median too; this is fine\n# because all samples of one site fall in the same class)\nsr_agg1 &lt;- aggregate(sr_proj_xy2, by = list(sr_proj_xy2$Latitude, sr_proj_xy2$Longitude), FUN = median, na.rm = TRUE)\nsr_agg1 &lt;- sr_agg1[,3:ncol(sr_agg1)]   # remove the two grouping columns added by aggregate()\nnrow(sr_agg1)",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "3. Regression matrix"
+    ]
+  },
+  {
+    "objectID": "03-regression-matrix.html#step-3.5-choose-the-candidate-covariates",
+    "href": "03-regression-matrix.html#step-3.5-choose-the-candidate-covariates",
+    "title": "3. Regression matrix",
+    "section": "Step 3.5: Choose the candidate covariates",
+    "text": "Step 3.5: Choose the candidate covariates\nBefore any statistics, think about the processes! Three groups of covariates need care in South Africa:\n\nCoarse atmospheric deposition layers (r.dust, r.salt, r.volc, r.fire, r.foss, r.biofuels, r.biogenic). Inside South Africa they are smooth gradients that the random forest can use as a proxy for latitude and longitude: the model “memorises” where the samples are. Random cross-validation looks good, but the model does not transfer to regions without data (see Section 4). Sea-salt input is better captured here by distance to the coast (r.distance).\nCategorical maps with hundreds of classes (r.geomap, r.vegmap). Most classes contain no training site, and the model cannot say anything about a class it has never seen. Their information is largely carried by the continuous geology layers.\nDuplicated layers: r.m1 is identical to r.srsrq1 in this clipped set.\n\n\ncandidate_set &lt;- \"all\"    # \"no_coarse\" or \"all\"\n\ncoarse_layers      &lt;- c(\"r.dust\", \"r.salt\", \"r.volc\", \"r.fire\", \"r.foss\", \"r.biofuels\", \"r.biogenic\")\ncategorical_layers &lt;- c(\"r.geomap\", \"r.vegmap\")\n\ndrop_layers &lt;- c(\"r.m1\", categorical_layers)\nif (candidate_set == \"no_coarse\") drop_layers &lt;- c(drop_layers, coarse_layers)\n\ncandidates &lt;- setdiff(predictor_names, drop_layers)\nlength(candidates)\n\n\n\n\n\n\n\n🧩 Your turn (later)\n\n\n\nRun the whole script with candidate_set &lt;- \"all\" and with \"no_coarse\". Compare the random and spatial cross-validation (Step 4.5) and the shape of the patterns in the maps.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "3. Regression matrix"
+    ]
+  },
+  {
+    "objectID": "03-regression-matrix.html#step-3.6-check-for-highly-correlated-covariates",
+    "href": "03-regression-matrix.html#step-3.6-check-for-highly-correlated-covariates",
+    "title": "3. Regression matrix",
+    "section": "Step 3.6: Check for highly correlated covariates",
+    "text": "Step 3.6: Check for highly correlated covariates\nRandom forest can handle collinear variables to some extent, but strong collinearity complicates the interpretation. Before VSURF, we remove one variable of every pair with |r| &gt; 0.9: findCorrelation() (caret) removes the variable with the largest mean correlation with all the others.\n\n#check correlation between covariates and remove redundant variables\ncor_mat &lt;- cor(sr_agg1[, candidates], use = \"pairwise.complete.obs\")\ncorrplot(cor_mat, method = \"color\", type = \"upper\", tl.cex = 0.5, tl.col = \"black\")\n\nhigh_cor &lt;- findCorrelation(cor_mat, cutoff = 0.9, names = TRUE)\nhigh_cor   # variables removed because R &gt; 0.9 with another variable\n\nkept &lt;- setdiff(candidates, high_cor)\n\nsr_agg &lt;- sr_agg1[, c(\"X87Sr86Sr\", \"X\", \"Y\", kept)]\n# Remove incomplete cases with NA in covariates\nsr_agg &lt;- sr_agg[complete.cases(sr_agg),]\n# Save table on directory\nwrite.table(sr_agg,\"Output/sr_agg_all.txt\",sep = \"\\t\",col.names = T, row.names = F, quote = F)\n\n\n🔗 Think · Pair · Share: correlated covariates\nMany covariates carry the same information: bedrock Sr at 1, 5, 10 and 25 km; rainfall, aridity and PET; Ca at 0–20 and 20–50 cm… What does collinearity do to a random forest, and how do we deal with it?\n\n\n💭 Think 2 min\nOn your own, look at the corrplot from Step 3.6.\n\nFind three groups of strongly correlated covariates.\nWhy are they correlated: the same process, the same source dataset, or a shared spatial gradient?\n\n\n\n🤝 Pair 3 min\n\nhigh_cor\n\nWith your neighbour:\n\nWhat does collinearity change in a random forest: the predictions? variable importance? partial dependence?\nWhich variables were removed? Would you have removed the same ones?\n\n\n\n📣 Share 3 min\nTell the room:\n\nWhat strategies remove or handle collinearity?\nWhat does this script do, and what would you do differently?\n\n\n\n\n\n\n\n\n\n\nThings you might have noticed\n\n\n\n\n\n🌲 What collinearity does to a random forest\n\nPredictions: little effect. Each split simply uses whichever correlated variable is drawn (mtry).\nImportance: shared or diluted between “twins”. A key process can look unimportant because its twin substitutes for it.\nInterpretation: partial dependence plots average over impossible combinations (e.g. high 5 km Sr with low 25 km Sr).\nSelection is unstable: which twin survives can change with the random seed.\n\n🛠️ What the script does\n\nfindCorrelation(): for each pair with |r| &gt; 0.9, drop the variable with the highest mean correlation → 39 candidates.\nVSURF (Step 4.3): the thresholding step removes noise; the prediction step removes redundancy.\nSpatial pruning (Step 4.4): drop variables that worsen the spatial-CV RMSE by &gt; 2%.\n\n💡 Other strategies\n\nChoose by process and resolution: keep the twin with the clearest mechanism.\nA lower threshold (0.7–0.8), or variance inflation factors (VIF).\nCombine a group into one axis (PCA, composite index), at the cost of interpretability.\nConditional or grouped permutation importance (Strobl et al. 2008).\nRemember: correlation among the training sites ≠ correlation across the whole map.\n\nTake-home: collinearity rarely hurts random forest predictions, but it blurs which process the model has actually learned.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "3. Regression matrix"
+    ]
+  },
+  {
+    "objectID": "03-regression-matrix.html#summary",
+    "href": "03-regression-matrix.html#summary",
+    "title": "3. Regression matrix",
+    "section": "Summary",
+    "text": "Summary\n\n\n\n\n\n\nKey takeaways\n\n\n\n\nThe regression matrix has one row per site (median of all samples at that site) and one column per covariate.\nThink about processes before statistics: coarse layers and sparse categorical maps can mislead the model.\nRemoving pairs with |r| &gt; 0.9 makes the model easier to interpret, not more accurate.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "3. Regression matrix"
+    ]
+  },
+  {
+    "objectID": "05-interpretation.html",
+    "href": "05-interpretation.html",
+    "title": "5. Interpreting the model",
+    "section": "",
+    "text": "In this section\n\n\n\n\nYou’ll learn: how to read variable importance and partial dependence plots, and check them against what we know of strontium isotopes\nYou’ll need: RF_all and training_rf (Section 4)\nTime: about 15 minutes",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "5. Interpreting the model"
+    ]
+  },
+  {
+    "objectID": "05-interpretation.html#overview",
+    "href": "05-interpretation.html#overview",
+    "title": "5. Interpreting the model",
+    "section": "Overview",
+    "text": "Overview\nA random forest averages hundreds of trees, which makes it accurate but hard to interpret. Two tools help us look inside:\n\nVariable importance: how much the predictions get worse when the values of one covariate are shuffled (permutation importance).\nPartial dependence plots (PDPs): how the predicted ⁸⁷Sr/⁸⁶Sr changes as one covariate varies, averaged over all the others.\n\nUser knowledge of Sr cycling is crucial here: the model only finds patterns, it is up to us to decide whether they make sense.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "5. Interpreting the model"
+    ]
+  },
+  {
+    "objectID": "05-interpretation.html#step-4.8a-variable-importance",
+    "href": "05-interpretation.html#step-4.8a-variable-importance",
+    "title": "5. Interpreting the model",
+    "section": "Step 4.8a: Variable importance",
+    "text": "Step 4.8a: Variable importance\n\n\nShow the code\n# Compute the variable importance using caret\nvar_imp &lt;- varImp(RF_all, scale = TRUE)\n\n# Convert the results into a data frame\nimp_df &lt;- as.data.frame(var_imp$importance)\n\n# Create the importance plot\nimp &lt;- ggplot(imp_df, aes(x = reorder(rownames(imp_df), Overall), y = Overall)) +\n  geom_bar(stat = \"identity\", fill = \"lightblue\", color = \"black\") +\n  coord_flip() +  # Flip the axes for better readability\n  labs(x = \"Predictor Variables\", y = \"Importance\", title = \"Variable Importance Plot\") +\n  theme_minimal() +\n  theme(axis.text = element_text(size = 12),\n        axis.title = element_text(size = 14),\n        plot.title = element_text(size = 16, face = \"bold\"),\n        axis.text.x = element_text(size = 10),\n        axis.text.y = element_text(size = 10))\nimp\nggsave(\"Output/FigS3.pdf\", imp, width = 14, height = 12)\n\n\n\n\n\nPermutation importance of the seven selected predictors\n\n\nr.srsrq1.f25, the mean bedrock ⁸⁷Sr/⁸⁶Sr within 25 km, is by far the most important predictor.\n\n\n\n\n\n\nImportance is not a process\n\n\n\nImportance tells us which covariates the model uses, not why. Correlated covariates share their importance (Section 3), and a covariate can be important because it acts as a proxy for location.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "5. Interpreting the model"
+    ]
+  },
+  {
+    "objectID": "05-interpretation.html#step-4.8b-partial-dependence-plots",
+    "href": "05-interpretation.html#step-4.8b-partial-dependence-plots",
+    "title": "5. Interpreting the model",
+    "section": "Step 4.8b: Partial dependence plots",
+    "text": "Step 4.8b: Partial dependence plots\nEach panel shows the predicted ⁸⁷Sr/⁸⁶Sr as one covariate varies while the others are averaged out. The histogram below each curve shows where the training sites are.\n\n\nShow the code\n# List of predictors to plot\npredictors &lt;- vars_final\n\n# Generate partial dependence data for all predictors\n# (grid.resolution = 25 points per variable: fast and smooth enough)\npartial_data_list &lt;- lapply(predictors, function(predictor) {\n  pdp::partial(RF_all$finalModel, pred.var = predictor, train = training_rf[, predictors], grid.resolution = 25)\n})\n\n# Name each list element by the predictor variable\nnames(partial_data_list) &lt;- predictors\n\n# Common y-axis range for all the PDPs (adapted automatically to the data)\npdp_range &lt;- range(unlist(lapply(partial_data_list, function(d) d$yhat)))\n\n# Create ggplot for each partial dependence plot (PDP) and histogram\nplots &lt;- lapply(names(partial_data_list), function(predictor) {\n  partial_data &lt;- partial_data_list[[predictor]]\n\n  # Extract data for the predictor variable (for histogram)\nx_data &lt;- training_rf[[predictor]]\n\n  # Create the PDP plot (Partial Dependence Plot)\npdp_plot &lt;- ggplot() +\n    geom_line(data = partial_data, aes(x = .data[[predictor]], y = .data[[\"yhat\"]]), color = \"blue\", linewidth = 1.2) +\n    geom_point(data = partial_data, aes(x = .data[[predictor]], y = .data[[\"yhat\"]]), color = \"blue\", size = 2) +\n    coord_cartesian(xlim = range(x_data), ylim = pdp_range) +  # Same y-axis range for all predictors\n    labs(x = NULL, y = \"Predicted Value\") +             # Remove x-axis title\n    theme_minimal() +\n    theme(\n      axis.text = element_text(size = 8),               # Smaller axis numbers\n      axis.title = element_text(size = 10),             # Smaller axis titles\n      plot.title = element_blank(),\n      panel.grid = element_blank(),\n      axis.text.x = element_blank(),                    # Remove x-axis numbers\n      axis.title.x = element_blank(),                   # Remove x-axis title\n      axis.ticks.x = element_blank()\n    )\n\n  # Create the Histogram for the predictor distribution\nhist_plot &lt;- ggplot() +\n    geom_histogram(data = data.frame(x = x_data), aes(x = x, y = after_stat(density)),\n                   bins = 30, fill = \"lightblue\", color = \"darkblue\", alpha = 0.5) +\n    coord_cartesian(xlim = range(x_data)) +  # Align x-axis with the PDP\n    labs(x = predictor, y = \"Density\") +\n    theme_minimal() +\n    theme(\n      axis.text = element_text(size = 8),           # Smaller axis numbers\n      axis.title = element_text(size = 10),         # Smaller axis titles\n      plot.title = element_blank(),\n      panel.grid = element_blank(),\n      axis.text.x = element_text(size = 8),         # Smaller x-axis numbers\n      axis.ticks.x = element_blank()\n    )\n\n  # Return the combined plot as a list (PDP + histogram)\n  list(pdp_plot = pdp_plot, hist_plot = hist_plot)\n})\n\n# Combine both plots (PDP and histogram) into a single plot with aligned x-axes\ncombined_plots &lt;- lapply(plots, function(p) {\n  p$pdp_plot + p$hist_plot + plot_layout(ncol = 1, heights = c(2, 1))\n})\n\n# Combine all plots into a single layout (adjust ncol to 3 or any number for better arrangement)\nfinal_plot &lt;- wrap_plots(combined_plots, ncol = 4)\nfinal_plot\n# Save the final plot as a PDF\nggsave(\"Output/FigS4.pdf\", final_plot, width = 16, height = 14)\n\n\n\n\n\nPartial dependence of predicted ⁸⁷Sr/⁸⁶Sr on the seven selected predictors\n\n\n\n📈 Think · Pair · Share: reading partial dependence\nEach curve is the predicted ⁸⁷Sr/⁸⁶Sr as one covariate varies, averaged over all the others. Does each relationship make sense with what we know of strontium isotopes?\n\n\n💭 Think 2 min\nOn your own, describe each of the seven curves:\n\nRising, falling, flat, or a step?\nWhere along the x-axis are the data?\n\n\n\n🤝 Pair 3 min\nWith your neighbour:\n\nMatch each curve to a Sr process: rock age and Rb/Sr, sea-salt input, carbonate and exchangeable Ca, mixing.\nWhich curves surprise you? Does r.africa.Ca.0 go the way you expected? And r.wetland?\n\n\n\n📣 Share 3 min\nTell the room:\n\nWhich curve would you trust least, and why?\nCan a strange curve point to a problem with the data, a covariate or the model?\n\n\n\n\n\n\n\n\n\n\nThings you might have noticed\n\n\n\n\n\n✔️ Consistent with Sr cycling\n\nNeighbourhood bedrock Sr (f25, f05): bioavailable Sr rises with the bedrock model, but the slope is well below 1:1. Atmospheric Sr and the preferential weathering of low-⁸⁷Sr/⁸⁶Sr minerals pull the values together.\nGeological age: older units are more radiogenic (⁸⁷Rb decay), in steps.\nDistance to coast: lowest within ~75 km of the sea, then a plateau. Sea-salt Sr (0.7092) dilutes the rock signal.\n\n❓ Worth discussing\n\nThe sharp step in f25 at ~0.718–0.720: a real threshold, or a few radiogenic sites (sparse rug) driving one split?\nExtractable Ca: a weak positive effect. Did you expect high Ca → carbonate → lower ⁸⁷Sr/⁸⁶Sr? Could Ca instead track arid, calcrete-rich soils over old basement?\nWetland: higher Sr where wetland cover is low. A process, or a proxy for location?\nElevation: almost flat, with ~0 importance. Why is it still in the model?\n\n⚠️ Read PDPs carefully\n\nFlat ends beyond the data: random forest cannot extrapolate, so predictions stay constant outside the training range.\nCorrelated covariates (f05, f25): the curve averages over unrealistic combinations.\nAmplitude ≠ importance, and interactions are hidden: try ICE curves or 2-D PDPs.\n\nTake-home: a PDP tests the model against your knowledge of Sr cycling. It does not prove a process.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "5. Interpreting the model"
+    ]
+  },
+  {
+    "objectID": "05-interpretation.html#summary",
+    "href": "05-interpretation.html#summary",
+    "title": "5. Interpreting the model",
+    "section": "Summary",
+    "text": "Summary\n\n\n\n\n\n\nKey takeaways\n\n\n\n\nNeighbourhood bedrock ⁸⁷Sr/⁸⁶Sr dominates the model, followed by soil Ca, local bedrock, wetland, age and distance to the coast.\nMost partial dependence curves agree with Sr cycling; the ones that don’t are worth a closer look.\nRandom forests cannot extrapolate beyond the range of the training data.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "5. Interpreting the model"
+    ]
+  }
+]

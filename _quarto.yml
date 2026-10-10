@@ -1,0 +1,79 @@
+project:
+  type: website
+  output-dir: docs            # "docs" makes GitHub Pages publishing easy
+  render:
+    - index.qmd
+    - 01-training-data.qmd
+    - 02-covariates.qmd
+    - 03-regression-matrix.qmd
+    - 04-cross-validation.qmd
+    - 05-interpretation.qmd
+    - 06-isoscape.qmd
+  resources:
+    - files/
+
+execute:
+  freeze: auto
+  eval: false                 # code is shown, not run: the figures come from a pre-computed run
+  echo: true
+  warning: false
+  message: false
+
+website:
+  title: "Strontium isotope geolocation for terrestrial ecology: Module 2"
+  description: "A hands-on workshop on building a random forest bioavailable 87Sr/86Sr isoscape"
+  site-url: https://cbataill.github.io/Isoecol2026_Srworkshop_P2
+  page-navigation: true       # previous / next buttons at the bottom of each page
+  back-to-top-navigation: true
+  reader-mode: true           # lets students hide the sidebars to focus
+  search:
+    location: sidebar
+
+  navbar:
+    background: primary
+    left:
+      - href: index.qmd
+        text: Home
+      - href: https://meganreich.github.io/Isoecol2026_Srworkshop_P3/
+        text: "Module 3 →"
+    right:
+      - icon: github
+        href: https://github.com/cbataill/Isoecol2026_Srworkshop_P2
+        aria-label: GitHub
+
+  sidebar:
+    style: docked
+    collapse-level: 1
+    contents:
+      - href: index.qmd
+        text: Welcome
+      - section: "Workshop"
+        contents:
+          - 01-training-data.qmd
+          - 02-covariates.qmd
+          - 03-regression-matrix.qmd
+          - 04-cross-validation.qmd
+          - 05-interpretation.qmd
+          - 06-isoscape.qmd
+
+  page-footer:
+    left: "© 2026 Clement Bataille · CC BY 4.0"
+    right: "Built with [Quarto](https://quarto.org)"
+
+format:
+  html:
+    theme: [litera, styles.scss]
+    toc: true
+    toc-depth: 3
+    toc-location: right
+    toc-title: "On this page"
+    number-sections: false
+    smooth-scroll: true
+    code-copy: true           # copy button on every code block
+    code-overflow: wrap
+    code-block-border-left: true
+    code-block-bg: true
+    code-link: false
+    callout-appearance: default
+    fig-align: center
+    lightbox: true            # click a figure to enlarge it

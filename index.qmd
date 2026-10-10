@@ -1,0 +1,105 @@
+---
+title: "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology"
+subtitle: "Module 2: building a random forest ⁸⁷Sr/⁸⁶Sr isoscape for South Africa"
+author: "Clement Bataille"
+date: "2026-10-09"
+toc: true
+---
+
+## Welcome
+
+Welcome to Module 2 of our workshop, "Strontium isotope geolocation for terrestrial ecology," held at The 14th International Conference on the Applications of Stable Isotope Techniques to Ecological Studies (ISOECOL 2026) in Hong Kong!
+
+In Module 1, we screened bioavailable ⁸⁷Sr/⁸⁶Sr data with IsoBank and the ARDUOUS template. Today, we use those data to build a **bioavailable ⁸⁷Sr/⁸⁶Sr isoscape** for South Africa with random forest regression. In [Module 3](https://meganreich.github.io/Isoecol2026_Srworkshop_P3/), Megan will use this isoscape to find where painted lady butterflies came from.
+
+::: {.callout-note appearance="simple"}
+## How to use this site
+
+Each section of the workshop has its own page, listed in the sidebar on the left. We'll go through them together, but you're welcome to work at your own pace. If you get lost, use the sidebar or the search box to find the section we're on.
+
+Throughout the pages you'll find **🦋 Think · Pair · Share** breaks. Stop there, think on your own, discuss with your neighbour, then share with the room. Open the **"Things you might have noticed"** box only after the discussion!
+:::
+
+![The random forest isoscape workflow (Bataille et al. 2020)](images/rf-workflow.png){width="75%"}
+
+## What you'll learn
+
+By the end of this module you will be able to:
+
+-   Build a regression matrix from bioavailable ⁸⁷Sr/⁸⁶Sr data and geospatial covariates
+-   Choose covariates using process knowledge, and deal with correlated covariates
+-   Select predictors and evaluate a random forest model with random and spatial cross-validation
+-   Interpret variable importance and partial dependence plots
+-   Map the isoscape and its uncertainty with a quantile random forest
+
+## Schedule
+
+| Time          | Section                                                                      |
+|---------------|------------------------------------------------------------------------------|
+| In advance    | [Before the workshop](#before-the-workshop)                                  |
+| 11:15 – 12:30 | [1. Training data](01-training-data.qmd) · [2. Covariates](02-covariates.qmd) · [3. Regression matrix](03-regression-matrix.qmd) |
+| 12:30 – 13:30 | Lunch (VSURF and the model run while we eat)                                 |
+| 13:30 – 14:30 | [4. Cross-validation](04-cross-validation.qmd) · [5. Interpretation](05-interpretation.qmd) · [6. Isoscape](06-isoscape.qmd) |
+
+## Before the workshop
+
+::: callout-important
+## Please set up before you arrive
+
+1.  Install a recent version of [R](https://cran.r-project.org/).
+2.  Install [RStudio Desktop](https://posit.co/download/rstudio-desktop/).
+3.  Run the code below in the RStudio console to install the packages we'll use.
+4.  Download the workshop data (below). The rasters are ~350 MB, so please don't wait for the conference Wi-Fi!
+:::
+
+```{r}
+#| label: install-packages
+install.packages(c("terra", "sf", "rnaturalearth", "rnaturalearthdata", "caret", "VSURF",
+                   "ranger", "corrplot", "viridis", "patchwork", "ggplot2", "pdp", "tidyverse"))
+```
+
+### Get the data and the script
+
+-   **Data and script:** everything is in the [`Module2_isoscape` folder](https://github.com/cbataill/Isoecol2026_Srworkshop_P2/tree/master/Module2_isoscape) of this site's repository. On the [repository page](https://github.com/cbataill/Isoecol2026_Srworkshop_P2), click **Code → Download ZIP**, unzip it and keep the `Module2_isoscape` folder (~400 MB). The data are also on [PURR](https://purr.purdue.edu/projects/isoecol2026srwo/info).
+-   **Script only:** [download `Script_RF_isoscape_SouthAfrica.Rmd`](files/Script_RF_isoscape_SouthAfrica.Rmd). Every code chunk on this site comes from this script.
+
+### Folder organisation
+
+```
+Module2_isoscape/
+├─ Script_RF_isoscape_SouthAfrica.Rmd
+├─ Data/
+│   └─ SouthAfrica_bioavailable_Sr_ARDUOUS.csv
+├─ Project_Raster/
+│   ├─ clipped_za/      (~60 rasters, Eckert IV, 1 km)
+│   └─ neighbourhood/   (created by the script)
+└─ Output/              (created by the script; pre-computed results are included)
+```
+
+::: {.callout-tip icon="false"}
+## Running the code
+
+1.  Open `Script_RF_isoscape_SouthAfrica.Rmd` in RStudio.
+2.  **Session → Set Working Directory → To Source File Location.**
+3.  Run the setup chunk: it installs any missing packages.
+4.  Run chunk by chunk (Ctrl+Shift+Enter) and look at each output. You can also copy the code from this site into the console.
+
+The whole script takes ~15–20 min on a laptop. The two slow steps are VSURF (~8 min, [Step 4.3](04-cross-validation.qmd#step-4.3-predictor-selection-with-vsurf)) and the isoscape prediction (~5 min, [Step 5.2](06-isoscape.qmd)). If your laptop is slow, load the pre-computed results from `Output/`.
+:::
+
+::: {.callout-note appearance="simple"}
+The figures on this site come from a pre-computed run of the script. Your results should be very close, but small differences are normal (random seeds, package versions).
+:::
+
+## More resources
+
+-   Bataille, C. P., Crowley, B. E., Wooller, M. J., & Bowen, G. J. (2020). Advances in global bioavailable strontium isoscapes. *Palaeogeography, Palaeoclimatology, Palaeoecology*, 555, 109849. <https://doi.org/10.1016/j.palaeo.2020.109849>
+-   Global predictor rasters (Eckert IV, 1 km): <https://osf.io/a2r7g/>
+-   ARDUOUS template: <https://www.nature.com/articles/s41597-026-06643-3>
+-   ARDUOUS dataset: <https://doi.isoarch.org/10.48530/isoarch.2024.002>
+
+## Getting help
+
+During the workshop, put up your hand or ask Clement, Megan, or Chris for help. Code that does not run? Compare with your neighbour first, then ask. Afterwards, contact Clement Bataille (Purdue University).
+
+# **Start:** [1. Training data →](01-training-data.qmd)

@@ -1,0 +1,6 @@
+.quarto/
+*_files/libs/
+.Rproj.user/
+.Rhistory
+
+/.quarto/

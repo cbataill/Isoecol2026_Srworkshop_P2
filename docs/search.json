@@ -216,6 +216,275 @@
     ]
   },
   {
+    "objectID": "02b-own-study-area.html",
+    "href": "02b-own-study-area.html",
+    "title": "Extra: your own study area",
+    "section": "",
+    "text": "In this section\n\n\n\n\nYou’ll learn: how to adapt this workflow to build an isoscape for your own study area\nYou’ll need: the global covariate rasters from OSF and screened bioavailable ⁸⁷Sr/⁸⁶Sr data for your area\nTime: read it after the workshop",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "Extra: your own study area"
+    ]
+  },
+  {
+    "objectID": "02b-own-study-area.html#overview",
+    "href": "02b-own-study-area.html#overview",
+    "title": "Extra: your own study area",
+    "section": "Overview",
+    "text": "Overview\nThe rasters in Project_Raster/clipped_za are the global covariates, already clipped to South Africa. To build an isoscape somewhere else, go back to the global rasters and clip them to your own area. The rest of the script stays the same.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "Extra: your own study area"
+    ]
+  },
+  {
+    "objectID": "02b-own-study-area.html#download-the-global-rasters",
+    "href": "02b-own-study-area.html#download-the-global-rasters",
+    "title": "Extra: your own study area",
+    "section": "1. Download the global rasters",
+    "text": "1. Download the global rasters\nDownload the global covariates (Eckert IV, 1 km) from the Projected_rasters folder of the OSF project, and put them all in one folder, e.g. Global_rasters/ next to Data/ and Project_Raster/. They are already in the same projection and resolution and snapped to the same grid, so all you need to do is clip them.\n\n\n\n\n\n\nLarge files\n\n\n\nThe global 1 km rasters are much larger than the South African ones. Download only the layers you need, and keep enough free disk space for the clipped copies.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "Extra: your own study area"
+    ]
+  },
+  {
+    "objectID": "02b-own-study-area.html#clip-them-to-your-study-area",
+    "href": "02b-own-study-area.html#clip-them-to-your-study-area",
+    "title": "Extra: your own study area",
+    "section": "2. Clip them to your study area",
+    "text": "2. Clip them to your study area\nDefine your study area as a polygon, reproject it to Eckert IV, add a buffer, then crop and mask every raster.\n\nlibrary(terra)\nlibrary(sf)\nlibrary(rnaturalearth)\n\neck4 &lt;- \"+proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs\"\n\nglobal_dir &lt;- \"Global_rasters\"                  # folder with the global OSF rasters\nout_dir    &lt;- \"Project_Raster/clipped_myarea\"   # where the clipped rasters will go\ndir.create(out_dir, recursive = TRUE, showWarnings = FALSE)\n\n# Study area: here one or more countries from Natural Earth...\narea &lt;- ne_countries(country = c(\"Kenya\", \"Tanzania\"), scale = \"medium\", returnclass = \"sf\")\n# ...or your own polygon: area &lt;- st_read(\"my_study_area.shp\")\n\narea &lt;- area |&gt;\n  st_transform(eck4) |&gt;\n  st_union() |&gt;\n  st_buffer(50000)   # 50 km buffer (see the tip below)\narea_v &lt;- vect(area)\n\n# Crop and mask every global raster to the study area\nfor (f in list.files(global_dir, pattern = \"\\\\.tif$\", full.names = TRUE)) {\n  r &lt;- rast(f)\n  r &lt;- crop(r, project(area_v, crs(r)), mask = TRUE)\n  writeRaster(r, file.path(out_dir, basename(f)), overwrite = TRUE)\n}\nlist.files(out_dir)\n\n\n\n\n\n\n\nWhy a buffer?\n\n\n\nThe neighbourhood covariates (Step 2.8) average the geology within 25 km. Near the edge of a tightly clipped area, those windows are cut in half. A buffer of at least 25 km (here 50 km) keeps them complete. It also lets you use training sites just outside your area of interest.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "Extra: your own study area"
+    ]
+  },
+  {
+    "objectID": "02b-own-study-area.html#point-the-script-to-your-rasters",
+    "href": "02b-own-study-area.html#point-the-script-to-your-rasters",
+    "title": "Extra: your own study area",
+    "section": "3. Point the script to your rasters",
+    "text": "3. Point the script to your rasters\nIn the setup chunk, change the raster folder:\n\nraster_dir &lt;- \"Project_Raster/clipped_myarea\"\n\nThen delete or rename Project_Raster/neighbourhood/, so that the neighbourhood layers (Step 2.8) are recomputed for your area instead of re-using the South African ones.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "Extra: your own study area"
+    ]
+  },
+  {
+    "objectID": "02b-own-study-area.html#adjust-the-list-of-covariates",
+    "href": "02b-own-study-area.html#adjust-the-list-of-covariates",
+    "title": "Extra: your own study area",
+    "section": "4. Adjust the list of covariates",
+    "text": "4. Adjust the list of covariates\nOn the Covariates page, Steps 2.2 to 2.7 load each raster by name, and Step 2.9 lists them in predictor_names. Every name in that list must exist in your folder.\n\nRemove the South African layers: r.geomap and r.vegmap exist only for South Africa. The iSDA soil layers (r.africa.*) cover Africa only: outside Africa, remove them too.\nCheck the other layers: a few layers in the South African set are not part of the global script (r.pet_clim, r.pfert, r.biofuels, r.biogenic). Keep them only if you have them.\nAdd your own regional layers if they exist (detailed geological maps, radiometric surveys, soil geochemistry…). They must be in Eckert IV at 1 km, on the same grid. project(my_layer, r.srsrq1) does this for you.\n\nInstead of editing Steps 2.2 to 2.7 one line at a time, you can load everything in the folder at once. Run this chunk in place of Steps 2.2 to 2.7:\n\nfiles &lt;- list.files(raster_dir, pattern = \"\\\\.tif$\", full.names = TRUE)\nfor (f in files) assign(sub(\"\\\\.tif$\", \"\", basename(f)), rast(f))\n\nThen run Step 2.8 (neighbourhood geology) as usual, and replace the predictor_names list in Step 2.9 with:\n\n# Every raster in the folder is a candidate covariate, plus the neighbourhood layers of Step 2.8\npredictor_names &lt;- c(sub(\"\\\\.tif$\", \"\", basename(files)), focal_names)\n\nIn the rest of Step 2.9, two lines refer to South African layers by name. Edit them if those layers are not in your folder:\n\nfor (p in c(\"r.geomap\", \"r.vegmap\")) levels(stack_all[[p]]) &lt;- NULL: delete it if you have no categorical maps (or put your own categorical layers in the list).\nplot(stack_all[[c(..., \"r.africa.Ca.0\")]]): remove \"r.africa.Ca.0\" outside Africa.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "Extra: your own study area"
+    ]
+  },
+  {
+    "objectID": "02b-own-study-area.html#use-your-own-training-data",
+    "href": "02b-own-study-area.html#use-your-own-training-data",
+    "title": "Extra: your own study area",
+    "section": "5. Use your own training data",
+    "text": "5. Use your own training data\nReplace Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv with screened bioavailable ⁸⁷Sr/⁸⁶Sr data for your area, in the ARDUOUS format (see Module 1 and the ARDUOUS dataset). The script uses the columns collection_decimal_longitude, collection_decimal_latitude, 87Sr86Sr and material_type.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "Extra: your own study area"
+    ]
+  },
+  {
+    "objectID": "02b-own-study-area.html#re-think-a-few-choices",
+    "href": "02b-own-study-area.html#re-think-a-few-choices",
+    "title": "Extra: your own study area",
+    "section": "6. Re-think a few choices",
+    "text": "6. Re-think a few choices\n\nCoarse layers (Step 3.5): inside one country, dust and sea-salt models are smooth gradients that act like coordinates. Over a continent, they vary for real and can be useful. Compare \"all\" and \"no_coarse\" with the spatial cross-validation.\nSpatial folds (Step 4.2): choose the number of clusters to match your sampling design, and check that the cross-validation distances look like the map’s.\nTime and memory: a larger area means more pixels. If the prediction (Step 5.2) runs out of memory, increase steps.\nFew data in your area? A locally trained model needs enough sites to learn from. With very few data, a globally trained isoscape (Bataille et al. 2020) is often the better starting point.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "Extra: your own study area"
+    ]
+  },
+  {
+    "objectID": "02b-own-study-area.html#summary",
+    "href": "02b-own-study-area.html#summary",
+    "title": "Extra: your own study area",
+    "section": "Summary",
+    "text": "Summary\n\n\n\n\n\n\nKey takeaways\n\n\n\n\nThe South African rasters are the global covariates clipped to South Africa: you can clip the same global rasters to any area.\nAdd a buffer of at least 25 km, so the neighbourhood covariates are complete at the edges.\nRemove the covariates that don’t exist in your area, add regional ones if you have them, and use your own screened training data.\nWith very few data, start from a globally trained isoscape.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "Extra: your own study area"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html",
+    "href": "01-training-data.html",
+    "title": "1. Training data",
+    "section": "",
+    "text": "In this section\n\n\n\n\nYou’ll learn: what our training data contain, and what they mean for the isoscape we can build\nYou’ll need: the Module2_isoscape folder (Before the workshop)\nTime: about 15 minutes",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html#overview",
+    "href": "01-training-data.html#overview",
+    "title": "1. Training data",
+    "section": "Overview",
+    "text": "Overview\nThis script is adapted from Bataille et al. (2020), “Advances in global bioavailable strontium isoscapes”. This version uses South Africa as a case study. Compared with the global version:\n\nTraining data: a harmonised and screened dataset of bioavailable ⁸⁷Sr/⁸⁶Sr for South Africa in the ARDUOUS format, mostly from plants.\nCovariates: the global Eckert IV 1 km rasters are already clipped to South Africa, so no cropping is needed and everything runs on a laptop.\nNew regional covariates: African soil chemistry (iSDA Africa), the 1:1M geological map of South Africa, the South African vegetation map, and neighbourhood (5, 10, 25 km) means of the bedrock ⁸⁷Sr/⁸⁶Sr and geological age.\nSpatial cross-validation: we compare random and spatial-block cross-validation, and use the spatial one to prune the predictors and tune the model.\n\n\n\n\n\n\n\nMore resources\n\n\n\n\nBataille, C. P., Crowley, B. E., Wooller, M. J., & Bowen, G. J. (2020). Advances in global bioavailable strontium isoscapes. Palaeogeography, Palaeoclimatology, Palaeoecology, 555, 109849. https://doi.org/10.1016/j.palaeo.2020.109849\nGlobal predictor rasters: https://osf.io/a2r7g/",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html#setting-up",
+    "href": "01-training-data.html#setting-up",
+    "title": "1. Training data",
+    "section": "Setting up",
+    "text": "Setting up\n\n\n\n\n\n\nBefore you run anything: set your working directory\n\n\n\nAll the paths below are relative to the Module2_isoscape folder. Open Module2_isoscape.Rproj first (or use Session → Set Working Directory). The second chunk below checks this for you and stops with a clear message if R is looking in the wrong folder. See Set your working directory for details.\n\n\n\n# install if necessary\nlist.of.packages &lt;- c(\"terra\", \"sf\", \"rnaturalearth\", \"rnaturalearthdata\", \"caret\", \"VSURF\", \"ranger\", \"corrplot\", \"viridis\", \"patchwork\", \"ggplot2\", \"pdp\")\n\nnew.packages &lt;- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]\n\nif(length(new.packages)) install.packages(new.packages)\n\n  library(parallel)    # detectCores() (part of base R)\n  library(terra)\n  library(sf)\n  library(viridis)\n  library(rnaturalearth)\n  library(rnaturalearthdata)\n  library(caret)\n  library(VSURF)\n  library(ranger)\n  library(corrplot)\n  library(patchwork)\n  library(ggplot2)\n  library(pdp)\n  library(tidyverse)\n\n# Number of cores used by VSURF (ranger uses all the cores by itself)\nn_cores &lt;- max(detectCores() - 1, 1)  # convention to leave 1 core for OS\n\n# caret runs sequentially here (ranger is already multi-threaded). If a parallel\n# cluster is still registered from a previous session (e.g. registerDoParallel()),\n# caret would try to use it and fail with \"invalid connection\": reset it.\nforeach::registerDoSEQ()\n\n\n#!! IMPORTANT: R must be \"looking\" in your Module2_isoscape folder, i.e. the folder\n#!! that contains Data/, Project_Raster/ and Output/. All the paths in this script\n#!! are relative to that folder. Set it in ONE of these ways:\n#!!   1. Easiest: open Module2_isoscape.Rproj (double-click it) before anything else\n#!!   2. Or, in RStudio: Session &gt; Set Working Directory &gt; To Source File Location\n#!!   3. Or type the path to YOUR Module2_isoscape folder in the setwd() line below,\n#!!      then remove the # at the start of the line. Use / even on Windows.\n# setwd(\"C:/Users/yourname/Documents/Module2_isoscape\")   # Windows example\n# setwd(\"~/Documents/Module2_isoscape\")                    # Mac / Linux example\n\n# Check: getwd() should end in .../Module2_isoscape\ngetwd()\nif (!file.exists(\"Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv\")) {\n  stop(\"Cannot find Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv. \",\n       \"Set the working directory to your Module2_isoscape folder (see the comments above).\")\n}\n\n#!! Create or use sub folders to keep things tidy!\nmydir &lt;- getwd()\n\ndir.create(file.path(mydir, \"/Output\", fsep = .Platform$file.sep), showWarnings = FALSE)\n\n# Folder with the rasters clipped to South Africa (Eckert IV, 1 km)\n# If you have only the zip file, run the commented line below to unzip it\n# unzip(\"Project_Raster.zip\", exdir = \"Project_Raster\")\nraster_dir &lt;- \"Project_Raster/clipped_za\"\n\n# Projection used for everything in this script (Eckert IV, equal area, metres)\neck4 &lt;- \"+proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs\"",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html#step-1.1-import-the-training-data",
+    "href": "01-training-data.html#step-1.1-import-the-training-data",
+    "title": "1. Training data",
+    "section": "Step 1.1: Import the training data",
+    "text": "Step 1.1: Import the training data\nThe training dataset Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv has already been harmonised and screened for you, in the ARDUOUS format.\n\n\n\n\n\n\nNot the Module 1 dataset\n\n\n\nThis is not the dataset screened in Module 1. It is a separate compilation for South Africa (SrBaseline, the Wang compilation and IsoBank), cleaned for this module. The screening steps are listed below.\n\n\nThis dataset mostly represents bioavailable ⁸⁷Sr/⁸⁶Sr from plants (608 of 927 records, 66%), complemented by modern fauna with small home ranges (259 records, 28%: rodents, hyraxes, hares, snails, tortoises, small antelopes) and soil leachates (60 records, 6%). It includes 579 distinct sampling locations.\n\n\n\n\n\n\nScreening applied\n\n\n\n\n\n\nonly records within South Africa, with coordinates and 0.700 &lt; ⁸⁷Sr/⁸⁶Sr &lt; 0.800;\nwaters (rivers, groundwater) removed, because they integrate whole catchments;\nhumans, hominins, primates, elephants and ivory, domestic cattle, fish, birds, large and migratory herbivores and large carnivores removed, because their ⁸⁷Sr/⁸⁶Sr does not reflect where they were collected;\nfossil specimens removed (e.g. the Elandsfontein and Sterkfontein/Swartkrans fossil fauna);\nduplicated measurements present in both compilations removed.\n\n\n\n\n\n#Import training data: harmonised and screened bioavailable 87Sr/86Sr dataset for South Africa (ARDUOUS format)\n#Mostly bioavailable Sr data from plants (66%), plus small-home-range fauna (28%) and soils (6%)\n# read.csv() renames the ARDUOUS column \"87Sr86Sr\" to \"X87Sr86Sr\" (R names cannot start with a number)\nsr_orig &lt;- read.csv(\"Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv\")\n\nnrow(sr_orig)\ntable(sr_orig$material_type)\nsummary(sr_orig$X87Sr86Sr)",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html#step-1.2-project-the-data-into-eckert-iv",
+    "href": "01-training-data.html#step-1.2-project-the-data-into-eckert-iv",
+    "title": "1. Training data",
+    "section": "Step 1.2: Project the data into Eckert IV",
+    "text": "Step 1.2: Project the data into Eckert IV\nWe will use the Eckert IV equal-area projection (1 km pixels) for everything.\n\nsr_proj &lt;- st_as_sf(sr_orig, coords = c(\"collection_decimal_longitude\", \"collection_decimal_latitude\"), crs = st_crs(4326), remove = FALSE) %&gt;%\n  st_transform(crs = eck4)\nplot(sr_proj[\"X87Sr86Sr\"], pch = 16, cex = 0.6)\n\n\n\n\nTraining data: 927 records at 579 sites, coloured by sample type",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html#step-1.3-administrative-maps",
+    "href": "01-training-data.html#step-1.3-administrative-maps",
+    "title": "1. Training data",
+    "section": "Step 1.3: Administrative maps",
+    "text": "Step 1.3: Administrative maps\nCountry boundaries for the figures, from Natural Earth, reprojected into Eckert IV.\n\nworld &lt;- ne_countries(scale = \"medium\", returnclass = \"sf\")\nworld_p &lt;- st_as_sf(world, crs = st_crs(4326)) %&gt;%\n  st_transform(crs = eck4)\n# Keep South Africa and neighbouring countries for the figures\nza_p &lt;- world_p[world_p$admin %in% c(\"South Africa\", \"Lesotho\", \"eSwatini\", \"Swaziland\", \"Namibia\", \"Botswana\", \"Zimbabwe\", \"Mozambique\"),]\nplot(st_geometry(za_p))\n\n\nThink · Pair · Share: a map for a butterfly\nYou want to find where painted ladies (Vanessa cardui) caught in South Africa grew up, from the ⁸⁷Sr/⁸⁶Sr of their wings. What training data and what kind of bioavailable Sr map do you need?\n\n\n💭 Think 2 min\n\ntable(sr_orig$material_type)\n\nOn your own, look at the sample types and the map above.\n\nWhere does a butterfly’s wing Sr come from?\nWhen in its life is it fixed?\n\n\n\n🤝 Pair 3 min\nWith your neighbour:\n\nWhich substrate is the best analogue for a butterfly: soils, plants or small-range fauna?\nWhich records would you keep or drop?\nIs the spatial coverage good enough where your butterflies might come from?\n\n\n\n📣 Share 3 min\nTell the room what map you would build:\n\nAll substrates or plants only?\nOver what extent, at what resolution, and with what uncertainty?\n\n\n\n\n\n\n\n\n\n\nThings you might have noticed\n\n\n\n\n\n🌿 The best substrate\n\nWing Sr is fixed during the larval stage: caterpillars eat host-plant leaves, and adult wing chitin is not remodelled.\nHerbaceous host plants (thistles, mallows, other Asteraceae) are the closest analogue: shallow roots, same Sr pool.\nSoil leachates, deep-rooted trees and small mammals sample other Sr pools or larger areas, and can be offset from host plants.\n\n🗺️ Is our dataset a good fit? Yes!\n\nIt is mostly plants (66%) plus small-range fauna (28%) that eat local plants, and everything that does not reflect local bioavailable Sr (waters, large or migratory animals, humans, fossils) has already been removed.\nSo it represents plant bioavailable Sr well. This is the isoscape we use for the butterflies in Module 3.\nWe also need an extent covering the whole potential natal range, ~1 km resolution (fine for a caterpillar), and a pixel-level uncertainty (SD) to feed assignR::pdRaster() in Module 3.\n\n⚖️ Substrate vs. coverage\n\nSubstrate matters: always ask whether your training data sample the same Sr pool as your organism.\nBut bioavailable Sr data are still scarce. Removing every substrate that is not a perfect match would leave large regions with no data, and the isoscape would get worse, not better.\nAt this stage, more data and better coverage beat perfect substrate matching. The uncertainty (SD) map absorbs part of the substrate differences. Substrate-specific isoscapes will make sense once we have many more data.\n\n⚠️ Watch out\n\n579 sites, but most are in the south-western Cape: the interior (Karoo, Northern Cape, Limpopo) will be predicted from covariates, not data.\n\nTake-home: think about substrate, but don’t screen your data to death. A well-screened, mostly plant dataset with good coverage is the right isoscape for a butterfly today.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "01-training-data.html#summary",
+    "href": "01-training-data.html#summary",
+    "title": "1. Training data",
+    "section": "Summary",
+    "text": "Summary\n\n\n\n\n\n\nKey takeaways\n\n\n\n\nThe training data are screened, harmonised bioavailable ⁸⁷Sr/⁸⁶Sr: mostly plants, plus small-range fauna and soils.\nThe sites are strongly clustered in the south-western Cape. Keep this in mind when we evaluate the model.\nThe best isoscape depends on the organism you want to track.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "1. Training data"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "",
+    "text": "Welcome to Module 2 of our workshop, “Strontium isotope geolocation for terrestrial ecology,” held at The 14th International Conference on the Applications of Stable Isotope Techniques to Ecological Studies (ISOECOL 2026) in Hong Kong!\nIn Module 1, Chris showed how to screen bioavailable ⁸⁷Sr/⁸⁶Sr data with IsoBank and the ARDUOUS template. Today, we use a different, already-cleaned dataset for South Africa (not the one screened in Module 1) to build a bioavailable ⁸⁷Sr/⁸⁶Sr isoscape with random forest regression. In Module 3, Megan will use this isoscape to find where painted lady butterflies came from.\n\n\n\n\n\n\nHow to use this site\n\n\n\nEach section of the workshop has its own page, listed in the sidebar on the left. We’ll go through them together, but you’re welcome to work at your own pace. If you get lost, use the sidebar or the search box to find the section we’re on.\nThroughout the pages you’ll find Think · Pair · Share breaks, marked with our “I ❤ strontium” tile . Stop there, think on your own, discuss with your neighbour, then share with the room. Open the “Things you might have noticed” box only after the discussion!\n\n\n\n\n\nThe random forest isoscape workflow (Bataille et al. 2020)",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "index.html#welcome",
+    "href": "index.html#welcome",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "",
+    "text": "Welcome to Module 2 of our workshop, “Strontium isotope geolocation for terrestrial ecology,” held at The 14th International Conference on the Applications of Stable Isotope Techniques to Ecological Studies (ISOECOL 2026) in Hong Kong!\nIn Module 1, Chris showed how to screen bioavailable ⁸⁷Sr/⁸⁶Sr data with IsoBank and the ARDUOUS template. Today, we use a different, already-cleaned dataset for South Africa (not the one screened in Module 1) to build a bioavailable ⁸⁷Sr/⁸⁶Sr isoscape with random forest regression. In Module 3, Megan will use this isoscape to find where painted lady butterflies came from.\n\n\n\n\n\n\nHow to use this site\n\n\n\nEach section of the workshop has its own page, listed in the sidebar on the left. We’ll go through them together, but you’re welcome to work at your own pace. If you get lost, use the sidebar or the search box to find the section we’re on.\nThroughout the pages you’ll find Think · Pair · Share breaks, marked with our “I ❤ strontium” tile . Stop there, think on your own, discuss with your neighbour, then share with the room. Open the “Things you might have noticed” box only after the discussion!\n\n\n\n\n\nThe random forest isoscape workflow (Bataille et al. 2020)",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "index.html#what-youll-learn",
+    "href": "index.html#what-youll-learn",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "What you’ll learn",
+    "text": "What you’ll learn\nBy the end of this module you will be able to:\n\nBuild a regression matrix from bioavailable ⁸⁷Sr/⁸⁶Sr data and geospatial covariates\nChoose covariates using process knowledge, and deal with correlated covariates\nSelect predictors and evaluate a random forest model with random and spatial cross-validation\nInterpret variable importance and partial dependence plots\nMap the isoscape and its uncertainty with a quantile random forest",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "index.html#schedule",
+    "href": "index.html#schedule",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "Schedule",
+    "text": "Schedule\n\n\n\nTime\nSection\n\n\n\n\nIn advance\nBefore the workshop\n\n\n11:15 – 12:30\n1. Training data · 2. Covariates · 3. Regression matrix\n\n\n12:30 – 13:30\nLunch (VSURF and the model run while we eat)\n\n\n13:30 – 14:30\n4. Cross-validation · 5. Interpretation · 6. Isoscape\n\n\nAfter the workshop\nExtra: applying this to your own study area",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "index.html#before-the-workshop",
+    "href": "index.html#before-the-workshop",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "Before the workshop",
+    "text": "Before the workshop\n\n\n\n\n\n\nPlease set up before you arrive\n\n\n\n\nInstall a recent version of R.\nInstall RStudio Desktop.\nRun the code below in the RStudio console to install the packages we’ll use.\nDownload and unzip the workshop data and script (below). It is ~400 MB, so please do this at home: don’t wait for the conference Wi-Fi!\nOpen the project in RStudio and run the check at the end of this page (below).\n\n\n\n\ninstall.packages(c(\"terra\", \"sf\", \"rnaturalearth\", \"rnaturalearthdata\", \"caret\", \"VSURF\",\n                   \"ranger\", \"corrplot\", \"viridis\", \"patchwork\", \"ggplot2\", \"pdp\", \"tidyverse\"))\n\n\nGet the data and the script\n\nDownload the workshop ZIP (~400 MB). It contains this website’s repository, including the data, the rasters and the script.\nUnzip it somewhere easy to find (e.g. your Desktop or Documents, not your Downloads folder, and not inside OneDrive/iCloud if you can avoid it). On Windows, right-click → Extract All: don’t open files from inside the zip.\nInside the unzipped folder Isoecol2026_Srworkshop_P2-master, the folder you need is Module2_isoscape. You can move it anywhere you like, as long as you keep its contents together.\n\nThe data are also on PURR. If you only want the script, download Script_RF_isoscape_SouthAfrica.Rmd: every code chunk on this site comes from it.\n\n\nFolder organisation\nModule2_isoscape/\n├─ Module2_isoscape.Rproj   ← double-click this to start\n├─ Script_RF_isoscape_SouthAfrica.Rmd\n├─ Data/\n│   └─ SouthAfrica_bioavailable_Sr_ARDUOUS.csv\n├─ Project_Raster/\n│   ├─ clipped_za/      (~60 rasters, Eckert IV, 1 km)\n│   └─ neighbourhood/   (created by the script)\n└─ Output/              (pre-computed results included)\n\n\nSet your working directory\nAll the paths in the code (Data/..., Project_Raster/..., Output/...) are relative to the Module2_isoscape folder. R must be “looking” in that folder, otherwise you’ll get errors like cannot open file 'Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv': No such file or directory.\n\nOption A: RStudio project (easiest)Option B: from the scriptOption C: setwd()\n\n\nDouble-click Module2_isoscape.Rproj. RStudio opens with the working directory already set to the right folder. Use this every time you come back to the workshop.\n\n\nOpen Script_RF_isoscape_SouthAfrica.Rmd in RStudio, then Session → Set Working Directory → To Source File Location.\n\n\nType the path to your Module2_isoscape folder, with forward slashes / (also on Windows):\n\nsetwd(\"C:/Users/yourname/Documents/Module2_isoscape\")   # Windows\nsetwd(\"~/Documents/Module2_isoscape\")                    # Mac / Linux\n\nTip: in RStudio, put the cursor between the quotes and press Tab to browse to the folder.\n\n\n\nThen run this check. It should print TRUE four times:\n\ngetwd()   # should end in .../Module2_isoscape\nfile.exists(c(\"Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv\",\n              \"Project_Raster/clipped_za/r.srsrq1.tif\",\n              \"Project_Raster/clipped_za/r.africa.Ca.0.tif\",\n              \"Output/sr_agg_all.txt\"))\n\n\n\n\n\n\n\nI get FALSE or “cannot open file”\n\n\n\n\n\n\ngetwd() doesn’t end in Module2_isoscape: R is looking in the wrong folder. Use one of the options above.\nIt ends in Module2_isoscape but you still get FALSE: check that you unzipped the whole folder (on Windows, files opened from inside a zip are not really there), and that Data/ and Project_Raster/ are directly inside Module2_isoscape, not one level deeper (e.g. Module2_isoscape/Module2_isoscape/Data).\nOnly the rasters are FALSE: the download was incomplete. Download the ZIP again.\n\n\n\n\n\n\n\n\n\n\nRunning the code\n\n\n\n\nOpen the project (Option A), then open Script_RF_isoscape_SouthAfrica.Rmd.\nRun the setup chunk: it installs any missing packages.\nRun chunk by chunk (Ctrl+Shift+Enter on Windows, Cmd+Shift+Enter on Mac) and look at each output. You can also copy the code from this site into the console, as long as the working directory is set.\nKeep this website open next to RStudio. The script tells you where to look: 📖 lines name the matching page of the website, and 🛑 STOP lines mark the Think · Pair · Share breaks, with a direct link to the discussion questions.\n\nThe whole script takes ~15–20 min on a laptop. The two slow steps are VSURF (~8 min, Step 4.3) and the isoscape prediction (~5 min, Step 5.2). If your laptop is slow, load the pre-computed results from Output/.\n\n\n\n\n\n\n\n\nThe figures on this site come from a pre-computed run of the script. Your results should be very close, but small differences are normal (random seeds, package versions).",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "index.html#more-resources",
+    "href": "index.html#more-resources",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "More resources",
+    "text": "More resources\n\nBataille, C. P., Crowley, B. E., Wooller, M. J., & Bowen, G. J. (2020). Advances in global bioavailable strontium isoscapes. Palaeogeography, Palaeoclimatology, Palaeoecology, 555, 109849. https://doi.org/10.1016/j.palaeo.2020.109849\nGlobal predictor rasters (Eckert IV, 1 km): https://osf.io/a2r7g/\nARDUOUS template: https://www.nature.com/articles/s41597-026-06643-3\nARDUOUS dataset: https://doi.isoarch.org/10.48530/isoarch.2024.002",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
+    "objectID": "index.html#getting-help",
+    "href": "index.html#getting-help",
+    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
+    "section": "Getting help",
+    "text": "Getting help\nDuring the workshop, put up your hand or ask Clement, Megan, or Chris for help. Code that does not run? Compare with your neighbour first, then ask. Afterwards, contact Clement Bataille (Purdue University).",
+    "crumbs": [
+      "Home",
+      "Welcome"
+    ]
+  },
+  {
     "objectID": "02-covariates.html",
     "href": "02-covariates.html",
     "title": "2. Covariates",
@@ -232,7 +501,7 @@
     "href": "02-covariates.html#overview",
     "title": "2. Covariates",
     "section": "Overview",
-    "text": "Overview\nWe now load the covariates used to train the random forest. They describe the geological, environmental and climatic processes that control bioavailable ⁸⁷Sr/⁸⁶Sr: the sources of Sr (bedrock, dust, sea salt), how it is mixed and weathered (soils, climate, sediments) and how it is taken up (vegetation).\n\n\n\n\n\n\nSame projection, same grid\n\n\n\nThe rasters must share the same projection and resolution, and be snapped to each other. This preprocessing is slow for global layers, so it has been done for you: the global Eckert IV 1 km rasters (OSF) are already clipped to South Africa in Project_Raster/clipped_za.\nWant to build an isoscape for your own study area? See Applying this to your own study area at the end of this page.\n\n\n\n\n\nSome of the covariates: bedrock model ⁸⁷Sr/⁸⁶Sr, geological age and distance to the coast\n\n\n\n\n\n\n\n\nThe full list of global covariates\n\n\n\n\n\n\nCompared with the global script, a few global layers are not in the South Africa set (Bouguer anomaly, permafrost, mean annual temperature and the other WorldClim variables except wind). Permafrost is irrelevant in South Africa anyway!",
+    "text": "Overview\nWe now load the covariates used to train the random forest. They describe the geological, environmental and climatic processes that control bioavailable ⁸⁷Sr/⁸⁶Sr: the sources of Sr (bedrock, dust, sea salt), how it is mixed and weathered (soils, climate, sediments) and how it is taken up (vegetation).\n\n\n\n\n\n\nSame projection, same grid\n\n\n\nThe rasters must share the same projection and resolution, and be snapped to each other. This preprocessing is slow for global layers, so it has been done for you: the global Eckert IV 1 km rasters (OSF) are already clipped to South Africa in Project_Raster/clipped_za.\nWant to build an isoscape for your own study area? See the extra page Your own study area (not run during the workshop).\n\n\n\n\n\nSome of the covariates: bedrock model ⁸⁷Sr/⁸⁶Sr, geological age and distance to the coast\n\n\n\n\n\n\n\n\nThe full list of global covariates\n\n\n\n\n\n\nCompared with the global script, a few global layers are not in the South Africa set (Bouguer anomaly, permafrost, mean annual temperature and the other WorldClim variables except wind). Permafrost is irrelevant in South Africa anyway!",
     "crumbs": [
       "Home",
       "Workshop",
@@ -336,188 +605,15 @@
     ]
   },
   {
-    "objectID": "02-covariates.html#applying-this-to-your-own-study-area",
-    "href": "02-covariates.html#applying-this-to-your-own-study-area",
-    "title": "2. Covariates",
-    "section": "Applying this to your own study area",
-    "text": "Applying this to your own study area\nThe rasters in Project_Raster/clipped_za are the global covariates, already clipped to South Africa. To build an isoscape somewhere else, go back to the global rasters and clip them to your own area. The rest of the script stays the same.\n\n1. Download the global rasters\nDownload the global covariates (Eckert IV, 1 km) from the Projected_rasters folder of the OSF project, and put them all in one folder, e.g. Global_rasters/ next to Data/ and Project_Raster/. They are already in the same projection and resolution and snapped to the same grid, so all you need to do is clip them.\n\n\n\n\n\n\nLarge files\n\n\n\nThe global 1 km rasters are much larger than the South African ones. Download only the layers you need, and keep enough free disk space for the clipped copies.\n\n\n\n\n2. Clip them to your study area\nDefine your study area as a polygon, reproject it to Eckert IV, add a buffer, then crop and mask every raster.\n\nlibrary(terra)\nlibrary(sf)\nlibrary(rnaturalearth)\n\neck4 &lt;- \"+proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs\"\n\nglobal_dir &lt;- \"Global_rasters\"                  # folder with the global OSF rasters\nout_dir    &lt;- \"Project_Raster/clipped_myarea\"   # where the clipped rasters will go\ndir.create(out_dir, recursive = TRUE, showWarnings = FALSE)\n\n# Study area: here one or more countries from Natural Earth...\narea &lt;- ne_countries(country = c(\"Kenya\", \"Tanzania\"), scale = \"medium\", returnclass = \"sf\")\n# ...or your own polygon: area &lt;- st_read(\"my_study_area.shp\")\n\narea &lt;- area |&gt;\n  st_transform(eck4) |&gt;\n  st_union() |&gt;\n  st_buffer(50000)   # 50 km buffer (see the tip below)\narea_v &lt;- vect(area)\n\n# Crop and mask every global raster to the study area\nfor (f in list.files(global_dir, pattern = \"\\\\.tif$\", full.names = TRUE)) {\n  r &lt;- rast(f)\n  r &lt;- crop(r, project(area_v, crs(r)), mask = TRUE)\n  writeRaster(r, file.path(out_dir, basename(f)), overwrite = TRUE)\n}\nlist.files(out_dir)\n\n\n\n\n\n\n\nWhy a buffer?\n\n\n\nThe neighbourhood covariates (Step 2.8) average the geology within 25 km. Near the edge of a tightly clipped area, those windows are cut in half. A buffer of at least 25 km (here 50 km) keeps them complete. It also lets you use training sites just outside your area of interest.\n\n\n\n\n3. Point the script to your rasters\nIn the setup chunk, change the raster folder:\n\nraster_dir &lt;- \"Project_Raster/clipped_myarea\"\n\nThen delete or rename Project_Raster/neighbourhood/, so that the neighbourhood layers (Step 2.8) are recomputed for your area instead of re-using the South African ones.\n\n\n4. Adjust the list of covariates\nSteps 2.2 to 2.7 load each raster by name, and Step 2.9 lists them in predictor_names. Every name in that list must exist in your folder.\n\nRemove the South African layers: r.geomap and r.vegmap exist only for South Africa. The iSDA soil layers (r.africa.*) cover Africa only: outside Africa, remove them too.\nCheck the other layers: a few layers in the South African set are not part of the global script (r.pet_clim, r.pfert, r.biofuels, r.biogenic). Keep them only if you have them.\nAdd your own regional layers if they exist (detailed geological maps, radiometric surveys, soil geochemistry…). They must be in Eckert IV at 1 km, on the same grid. project(my_layer, r.srsrq1) does this for you.\n\nInstead of editing Steps 2.2 to 2.7 one line at a time, you can load everything in the folder at once. Run this chunk in place of Steps 2.2 to 2.7:\n\nfiles &lt;- list.files(raster_dir, pattern = \"\\\\.tif$\", full.names = TRUE)\nfor (f in files) assign(sub(\"\\\\.tif$\", \"\", basename(f)), rast(f))\n\nThen run Step 2.8 (neighbourhood geology) as usual, and replace the predictor_names list in Step 2.9 with:\n\n# Every raster in the folder is a candidate covariate, plus the neighbourhood layers of Step 2.8\npredictor_names &lt;- c(sub(\"\\\\.tif$\", \"\", basename(files)), focal_names)\n\nIn the rest of Step 2.9, two lines refer to South African layers by name. Edit them if those layers are not in your folder:\n\nfor (p in c(\"r.geomap\", \"r.vegmap\")) levels(stack_all[[p]]) &lt;- NULL: delete it if you have no categorical maps (or put your own categorical layers in the list).\nplot(stack_all[[c(..., \"r.africa.Ca.0\")]]): remove \"r.africa.Ca.0\" outside Africa.\n\n\n\n5. Use your own training data\nReplace Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv with screened bioavailable ⁸⁷Sr/⁸⁶Sr data for your area, in the ARDUOUS format (see Module 1 and the ARDUOUS dataset). The script uses the columns collection_decimal_longitude, collection_decimal_latitude, 87Sr86Sr and material_type.\n\n\n6. Re-think a few choices\n\nCoarse layers (Step 3.5): inside one country, dust and sea-salt models are smooth gradients that act like coordinates. Over a continent, they vary for real and can be useful. Compare \"all\" and \"no_coarse\" with the spatial cross-validation.\nSpatial folds (Step 4.2): choose the number of clusters to match your sampling design, and check that the cross-validation distances look like the map’s.\nTime and memory: a larger area means more pixels. If the prediction (Step 5.2) runs out of memory, increase steps.\nFew data in your area? A locally trained model needs enough sites to learn from. With very few data, a globally trained isoscape (Bataille et al. 2020) is often the better starting point.",
-    "crumbs": [
-      "Home",
-      "Workshop",
-      "2. Covariates"
-    ]
-  },
-  {
     "objectID": "02-covariates.html#summary",
     "href": "02-covariates.html#summary",
     "title": "2. Covariates",
     "section": "Summary",
-    "text": "Summary\n\n\n\n\n\n\nKey takeaways\n\n\n\n\nCovariates describe the sources, mixing and uptake of Sr.\nRegional datasets (soil chemistry, detailed geology) can add real information, but only if the training sites cover them.\nBioavailable Sr integrates more than the rock under the pixel: neighbourhood geology captures this.\nTo work in another area, clip the global OSF rasters to your study area (with a buffer) and adjust the covariate list.",
+    "text": "Summary\n\n\n\n\n\n\nKey takeaways\n\n\n\n\nCovariates describe the sources, mixing and uptake of Sr.\nRegional datasets (soil chemistry, detailed geology) can add real information, but only if the training sites cover them.\nBioavailable Sr integrates more than the rock under the pixel: neighbourhood geology captures this.\nTo work in another area, clip the global OSF rasters to your study area: see Your own study area.\n\n\n\nExtra (optional, after the workshop): Applying this to your own study area",
     "crumbs": [
       "Home",
       "Workshop",
       "2. Covariates"
-    ]
-  },
-  {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
-    "section": "",
-    "text": "Welcome to Module 2 of our workshop, “Strontium isotope geolocation for terrestrial ecology,” held at The 14th International Conference on the Applications of Stable Isotope Techniques to Ecological Studies (ISOECOL 2026) in Hong Kong!\nIn Module 1, Chris showed how to screen bioavailable ⁸⁷Sr/⁸⁶Sr data with IsoBank and the ARDUOUS template. Today, we use a different, already-cleaned dataset for South Africa (not the one screened in Module 1) to build a bioavailable ⁸⁷Sr/⁸⁶Sr isoscape with random forest regression. In Module 3, Megan will use this isoscape to find where painted lady butterflies came from.\n\n\n\n\n\n\nHow to use this site\n\n\n\nEach section of the workshop has its own page, listed in the sidebar on the left. We’ll go through them together, but you’re welcome to work at your own pace. If you get lost, use the sidebar or the search box to find the section we’re on.\nThroughout the pages you’ll find Think · Pair · Share breaks, marked with our “I ❤ strontium” tile . Stop there, think on your own, discuss with your neighbour, then share with the room. Open the “Things you might have noticed” box only after the discussion!\n\n\n\n\n\nThe random forest isoscape workflow (Bataille et al. 2020)",
-    "crumbs": [
-      "Home",
-      "Welcome"
-    ]
-  },
-  {
-    "objectID": "index.html#welcome",
-    "href": "index.html#welcome",
-    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
-    "section": "",
-    "text": "Welcome to Module 2 of our workshop, “Strontium isotope geolocation for terrestrial ecology,” held at The 14th International Conference on the Applications of Stable Isotope Techniques to Ecological Studies (ISOECOL 2026) in Hong Kong!\nIn Module 1, Chris showed how to screen bioavailable ⁸⁷Sr/⁸⁶Sr data with IsoBank and the ARDUOUS template. Today, we use a different, already-cleaned dataset for South Africa (not the one screened in Module 1) to build a bioavailable ⁸⁷Sr/⁸⁶Sr isoscape with random forest regression. In Module 3, Megan will use this isoscape to find where painted lady butterflies came from.\n\n\n\n\n\n\nHow to use this site\n\n\n\nEach section of the workshop has its own page, listed in the sidebar on the left. We’ll go through them together, but you’re welcome to work at your own pace. If you get lost, use the sidebar or the search box to find the section we’re on.\nThroughout the pages you’ll find Think · Pair · Share breaks, marked with our “I ❤ strontium” tile . Stop there, think on your own, discuss with your neighbour, then share with the room. Open the “Things you might have noticed” box only after the discussion!\n\n\n\n\n\nThe random forest isoscape workflow (Bataille et al. 2020)",
-    "crumbs": [
-      "Home",
-      "Welcome"
-    ]
-  },
-  {
-    "objectID": "index.html#what-youll-learn",
-    "href": "index.html#what-youll-learn",
-    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
-    "section": "What you’ll learn",
-    "text": "What you’ll learn\nBy the end of this module you will be able to:\n\nBuild a regression matrix from bioavailable ⁸⁷Sr/⁸⁶Sr data and geospatial covariates\nChoose covariates using process knowledge, and deal with correlated covariates\nSelect predictors and evaluate a random forest model with random and spatial cross-validation\nInterpret variable importance and partial dependence plots\nMap the isoscape and its uncertainty with a quantile random forest",
-    "crumbs": [
-      "Home",
-      "Welcome"
-    ]
-  },
-  {
-    "objectID": "index.html#schedule",
-    "href": "index.html#schedule",
-    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
-    "section": "Schedule",
-    "text": "Schedule\n\n\n\nTime\nSection\n\n\n\n\nIn advance\nBefore the workshop\n\n\n11:15 – 12:30\n1. Training data · 2. Covariates · 3. Regression matrix\n\n\n12:30 – 13:30\nLunch (VSURF and the model run while we eat)\n\n\n13:30 – 14:30\n4. Cross-validation · 5. Interpretation · 6. Isoscape",
-    "crumbs": [
-      "Home",
-      "Welcome"
-    ]
-  },
-  {
-    "objectID": "index.html#before-the-workshop",
-    "href": "index.html#before-the-workshop",
-    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
-    "section": "Before the workshop",
-    "text": "Before the workshop\n\n\n\n\n\n\nPlease set up before you arrive\n\n\n\n\nInstall a recent version of R.\nInstall RStudio Desktop.\nRun the code below in the RStudio console to install the packages we’ll use.\nDownload and unzip the workshop data and script (below). It is ~400 MB, so please do this at home: don’t wait for the conference Wi-Fi!\nOpen the project in RStudio and run the check at the end of this page (below).\n\n\n\n\ninstall.packages(c(\"terra\", \"sf\", \"rnaturalearth\", \"rnaturalearthdata\", \"caret\", \"VSURF\",\n                   \"ranger\", \"corrplot\", \"viridis\", \"patchwork\", \"ggplot2\", \"pdp\", \"tidyverse\"))\n\n\nGet the data and the script\n\nDownload the workshop ZIP (~400 MB). It contains this website’s repository, including the data, the rasters and the script.\nUnzip it somewhere easy to find (e.g. your Desktop or Documents, not your Downloads folder, and not inside OneDrive/iCloud if you can avoid it). On Windows, right-click → Extract All: don’t open files from inside the zip.\nInside the unzipped folder Isoecol2026_Srworkshop_P2-master, the folder you need is Module2_isoscape. You can move it anywhere you like, as long as you keep its contents together.\n\nThe data are also on PURR. If you only want the script, download Script_RF_isoscape_SouthAfrica.Rmd: every code chunk on this site comes from it.\n\n\nFolder organisation\nModule2_isoscape/\n├─ Module2_isoscape.Rproj   ← double-click this to start\n├─ Script_RF_isoscape_SouthAfrica.Rmd\n├─ Data/\n│   └─ SouthAfrica_bioavailable_Sr_ARDUOUS.csv\n├─ Project_Raster/\n│   ├─ clipped_za/      (~60 rasters, Eckert IV, 1 km)\n│   └─ neighbourhood/   (created by the script)\n└─ Output/              (pre-computed results included)\n\n\nSet your working directory\nAll the paths in the code (Data/..., Project_Raster/..., Output/...) are relative to the Module2_isoscape folder. R must be “looking” in that folder, otherwise you’ll get errors like cannot open file 'Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv': No such file or directory.\n\nOption A: RStudio project (easiest)Option B: from the scriptOption C: setwd()\n\n\nDouble-click Module2_isoscape.Rproj. RStudio opens with the working directory already set to the right folder. Use this every time you come back to the workshop.\n\n\nOpen Script_RF_isoscape_SouthAfrica.Rmd in RStudio, then Session → Set Working Directory → To Source File Location.\n\n\nType the path to your Module2_isoscape folder, with forward slashes / (also on Windows):\n\nsetwd(\"C:/Users/yourname/Documents/Module2_isoscape\")   # Windows\nsetwd(\"~/Documents/Module2_isoscape\")                    # Mac / Linux\n\nTip: in RStudio, put the cursor between the quotes and press Tab to browse to the folder.\n\n\n\nThen run this check. It should print TRUE four times:\n\ngetwd()   # should end in .../Module2_isoscape\nfile.exists(c(\"Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv\",\n              \"Project_Raster/clipped_za/r.srsrq1.tif\",\n              \"Project_Raster/clipped_za/r.africa.Ca.0.tif\",\n              \"Output/sr_agg_all.txt\"))\n\n\n\n\n\n\n\nI get FALSE or “cannot open file”\n\n\n\n\n\n\ngetwd() doesn’t end in Module2_isoscape: R is looking in the wrong folder. Use one of the options above.\nIt ends in Module2_isoscape but you still get FALSE: check that you unzipped the whole folder (on Windows, files opened from inside a zip are not really there), and that Data/ and Project_Raster/ are directly inside Module2_isoscape, not one level deeper (e.g. Module2_isoscape/Module2_isoscape/Data).\nOnly the rasters are FALSE: the download was incomplete. Download the ZIP again.\n\n\n\n\n\n\n\n\n\n\nRunning the code\n\n\n\n\nOpen the project (Option A), then open Script_RF_isoscape_SouthAfrica.Rmd.\nRun the setup chunk: it installs any missing packages.\nRun chunk by chunk (Ctrl+Shift+Enter on Windows, Cmd+Shift+Enter on Mac) and look at each output. You can also copy the code from this site into the console, as long as the working directory is set.\nKeep this website open next to RStudio. The script tells you where to look: 📖 lines name the matching page of the website, and 🛑 STOP lines mark the Think · Pair · Share breaks, with a direct link to the discussion questions.\n\nThe whole script takes ~15–20 min on a laptop. The two slow steps are VSURF (~8 min, Step 4.3) and the isoscape prediction (~5 min, Step 5.2). If your laptop is slow, load the pre-computed results from Output/.\n\n\n\n\n\n\n\n\nThe figures on this site come from a pre-computed run of the script. Your results should be very close, but small differences are normal (random seeds, package versions).",
-    "crumbs": [
-      "Home",
-      "Welcome"
-    ]
-  },
-  {
-    "objectID": "index.html#more-resources",
-    "href": "index.html#more-resources",
-    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
-    "section": "More resources",
-    "text": "More resources\n\nBataille, C. P., Crowley, B. E., Wooller, M. J., & Bowen, G. J. (2020). Advances in global bioavailable strontium isoscapes. Palaeogeography, Palaeoclimatology, Palaeoecology, 555, 109849. https://doi.org/10.1016/j.palaeo.2020.109849\nGlobal predictor rasters (Eckert IV, 1 km): https://osf.io/a2r7g/\nARDUOUS template: https://www.nature.com/articles/s41597-026-06643-3\nARDUOUS dataset: https://doi.isoarch.org/10.48530/isoarch.2024.002",
-    "crumbs": [
-      "Home",
-      "Welcome"
-    ]
-  },
-  {
-    "objectID": "index.html#getting-help",
-    "href": "index.html#getting-help",
-    "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
-    "section": "Getting help",
-    "text": "Getting help\nDuring the workshop, put up your hand or ask Clement, Megan, or Chris for help. Code that does not run? Compare with your neighbour first, then ask. Afterwards, contact Clement Bataille (Purdue University).",
-    "crumbs": [
-      "Home",
-      "Welcome"
-    ]
-  },
-  {
-    "objectID": "01-training-data.html",
-    "href": "01-training-data.html",
-    "title": "1. Training data",
-    "section": "",
-    "text": "In this section\n\n\n\n\nYou’ll learn: what our training data contain, and what they mean for the isoscape we can build\nYou’ll need: the Module2_isoscape folder (Before the workshop)\nTime: about 15 minutes",
-    "crumbs": [
-      "Home",
-      "Workshop",
-      "1. Training data"
-    ]
-  },
-  {
-    "objectID": "01-training-data.html#overview",
-    "href": "01-training-data.html#overview",
-    "title": "1. Training data",
-    "section": "Overview",
-    "text": "Overview\nThis script is adapted from Bataille et al. (2020), “Advances in global bioavailable strontium isoscapes”. This version uses South Africa as a case study. Compared with the global version:\n\nTraining data: a harmonised and screened dataset of bioavailable ⁸⁷Sr/⁸⁶Sr for South Africa in the ARDUOUS format, mostly from plants.\nCovariates: the global Eckert IV 1 km rasters are already clipped to South Africa, so no cropping is needed and everything runs on a laptop.\nNew regional covariates: African soil chemistry (iSDA Africa), the 1:1M geological map of South Africa, the South African vegetation map, and neighbourhood (5, 10, 25 km) means of the bedrock ⁸⁷Sr/⁸⁶Sr and geological age.\nSpatial cross-validation: we compare random and spatial-block cross-validation, and use the spatial one to prune the predictors and tune the model.\n\n\n\n\n\n\n\nMore resources\n\n\n\n\nBataille, C. P., Crowley, B. E., Wooller, M. J., & Bowen, G. J. (2020). Advances in global bioavailable strontium isoscapes. Palaeogeography, Palaeoclimatology, Palaeoecology, 555, 109849. https://doi.org/10.1016/j.palaeo.2020.109849\nGlobal predictor rasters: https://osf.io/a2r7g/",
-    "crumbs": [
-      "Home",
-      "Workshop",
-      "1. Training data"
-    ]
-  },
-  {
-    "objectID": "01-training-data.html#setting-up",
-    "href": "01-training-data.html#setting-up",
-    "title": "1. Training data",
-    "section": "Setting up",
-    "text": "Setting up\n\n\n\n\n\n\nBefore you run anything: set your working directory\n\n\n\nAll the paths below are relative to the Module2_isoscape folder. Open Module2_isoscape.Rproj first (or use Session → Set Working Directory). The second chunk below checks this for you and stops with a clear message if R is looking in the wrong folder. See Set your working directory for details.\n\n\n\n# install if necessary\nlist.of.packages &lt;- c(\"terra\", \"sf\", \"rnaturalearth\", \"rnaturalearthdata\", \"caret\", \"VSURF\", \"ranger\", \"corrplot\", \"viridis\", \"patchwork\", \"ggplot2\", \"pdp\")\n\nnew.packages &lt;- list.of.packages[!(list.of.packages %in% installed.packages()[,\"Package\"])]\n\nif(length(new.packages)) install.packages(new.packages)\n\n  library(parallel)    # detectCores() (part of base R)\n  library(terra)\n  library(sf)\n  library(viridis)\n  library(rnaturalearth)\n  library(rnaturalearthdata)\n  library(caret)\n  library(VSURF)\n  library(ranger)\n  library(corrplot)\n  library(patchwork)\n  library(ggplot2)\n  library(pdp)\n  library(tidyverse)\n\n# Number of cores used by VSURF (ranger uses all the cores by itself)\nn_cores &lt;- max(detectCores() - 1, 1)  # convention to leave 1 core for OS\n\n# caret runs sequentially here (ranger is already multi-threaded). If a parallel\n# cluster is still registered from a previous session (e.g. registerDoParallel()),\n# caret would try to use it and fail with \"invalid connection\": reset it.\nforeach::registerDoSEQ()\n\n\n#!! IMPORTANT: R must be \"looking\" in your Module2_isoscape folder, i.e. the folder\n#!! that contains Data/, Project_Raster/ and Output/. All the paths in this script\n#!! are relative to that folder. Set it in ONE of these ways:\n#!!   1. Easiest: open Module2_isoscape.Rproj (double-click it) before anything else\n#!!   2. Or, in RStudio: Session &gt; Set Working Directory &gt; To Source File Location\n#!!   3. Or type the path to YOUR Module2_isoscape folder in the setwd() line below,\n#!!      then remove the # at the start of the line. Use / even on Windows.\n# setwd(\"C:/Users/yourname/Documents/Module2_isoscape\")   # Windows example\n# setwd(\"~/Documents/Module2_isoscape\")                    # Mac / Linux example\n\n# Check: getwd() should end in .../Module2_isoscape\ngetwd()\nif (!file.exists(\"Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv\")) {\n  stop(\"Cannot find Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv. \",\n       \"Set the working directory to your Module2_isoscape folder (see the comments above).\")\n}\n\n#!! Create or use sub folders to keep things tidy!\nmydir &lt;- getwd()\n\ndir.create(file.path(mydir, \"/Output\", fsep = .Platform$file.sep), showWarnings = FALSE)\n\n# Folder with the rasters clipped to South Africa (Eckert IV, 1 km)\n# If you have only the zip file, run the commented line below to unzip it\n# unzip(\"Project_Raster.zip\", exdir = \"Project_Raster\")\nraster_dir &lt;- \"Project_Raster/clipped_za\"\n\n# Projection used for everything in this script (Eckert IV, equal area, metres)\neck4 &lt;- \"+proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs\"",
-    "crumbs": [
-      "Home",
-      "Workshop",
-      "1. Training data"
-    ]
-  },
-  {
-    "objectID": "01-training-data.html#step-1.1-import-the-training-data",
-    "href": "01-training-data.html#step-1.1-import-the-training-data",
-    "title": "1. Training data",
-    "section": "Step 1.1: Import the training data",
-    "text": "Step 1.1: Import the training data\nThe training dataset Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv has already been harmonised and screened for you, in the ARDUOUS format.\n\n\n\n\n\n\nNot the Module 1 dataset\n\n\n\nThis is not the dataset screened in Module 1. It is a separate compilation for South Africa (SrBaseline, the Wang compilation and IsoBank), cleaned for this module. The screening steps are listed below.\n\n\nThis dataset mostly represents bioavailable ⁸⁷Sr/⁸⁶Sr from plants (608 of 927 records, 66%), complemented by modern fauna with small home ranges (259 records, 28%: rodents, hyraxes, hares, snails, tortoises, small antelopes) and soil leachates (60 records, 6%). It includes 579 distinct sampling locations.\n\n\n\n\n\n\nScreening applied\n\n\n\n\n\n\nonly records within South Africa, with coordinates and 0.700 &lt; ⁸⁷Sr/⁸⁶Sr &lt; 0.800;\nwaters (rivers, groundwater) removed, because they integrate whole catchments;\nhumans, hominins, primates, elephants and ivory, domestic cattle, fish, birds, large and migratory herbivores and large carnivores removed, because their ⁸⁷Sr/⁸⁶Sr does not reflect where they were collected;\nfossil specimens removed (e.g. the Elandsfontein and Sterkfontein/Swartkrans fossil fauna);\nduplicated measurements present in both compilations removed.\n\n\n\n\n\n#Import training data: harmonised and screened bioavailable 87Sr/86Sr dataset for South Africa (ARDUOUS format)\n#Mostly bioavailable Sr data from plants (66%), plus small-home-range fauna (28%) and soils (6%)\n# read.csv() renames the ARDUOUS column \"87Sr86Sr\" to \"X87Sr86Sr\" (R names cannot start with a number)\nsr_orig &lt;- read.csv(\"Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv\")\n\nnrow(sr_orig)\ntable(sr_orig$material_type)\nsummary(sr_orig$X87Sr86Sr)",
-    "crumbs": [
-      "Home",
-      "Workshop",
-      "1. Training data"
-    ]
-  },
-  {
-    "objectID": "01-training-data.html#step-1.2-project-the-data-into-eckert-iv",
-    "href": "01-training-data.html#step-1.2-project-the-data-into-eckert-iv",
-    "title": "1. Training data",
-    "section": "Step 1.2: Project the data into Eckert IV",
-    "text": "Step 1.2: Project the data into Eckert IV\nWe will use the Eckert IV equal-area projection (1 km pixels) for everything.\n\nsr_proj &lt;- st_as_sf(sr_orig, coords = c(\"collection_decimal_longitude\", \"collection_decimal_latitude\"), crs = st_crs(4326), remove = FALSE) %&gt;%\n  st_transform(crs = eck4)\nplot(sr_proj[\"X87Sr86Sr\"], pch = 16, cex = 0.6)\n\n\n\n\nTraining data: 927 records at 579 sites, coloured by sample type",
-    "crumbs": [
-      "Home",
-      "Workshop",
-      "1. Training data"
-    ]
-  },
-  {
-    "objectID": "01-training-data.html#step-1.3-administrative-maps",
-    "href": "01-training-data.html#step-1.3-administrative-maps",
-    "title": "1. Training data",
-    "section": "Step 1.3: Administrative maps",
-    "text": "Step 1.3: Administrative maps\nCountry boundaries for the figures, from Natural Earth, reprojected into Eckert IV.\n\nworld &lt;- ne_countries(scale = \"medium\", returnclass = \"sf\")\nworld_p &lt;- st_as_sf(world, crs = st_crs(4326)) %&gt;%\n  st_transform(crs = eck4)\n# Keep South Africa and neighbouring countries for the figures\nza_p &lt;- world_p[world_p$admin %in% c(\"South Africa\", \"Lesotho\", \"eSwatini\", \"Swaziland\", \"Namibia\", \"Botswana\", \"Zimbabwe\", \"Mozambique\"),]\nplot(st_geometry(za_p))\n\n\nThink · Pair · Share: a map for a butterfly\nYou want to find where painted ladies (Vanessa cardui) caught in South Africa grew up, from the ⁸⁷Sr/⁸⁶Sr of their wings. What training data and what kind of bioavailable Sr map do you need?\n\n\n💭 Think 2 min\n\ntable(sr_orig$material_type)\n\nOn your own, look at the sample types and the map above.\n\nWhere does a butterfly’s wing Sr come from?\nWhen in its life is it fixed?\n\n\n\n🤝 Pair 3 min\nWith your neighbour:\n\nWhich substrate is the best analogue for a butterfly: soils, plants or small-range fauna?\nWhich records would you keep or drop?\nIs the spatial coverage good enough where your butterflies might come from?\n\n\n\n📣 Share 3 min\nTell the room what map you would build:\n\nAll substrates or plants only?\nOver what extent, at what resolution, and with what uncertainty?\n\n\n\n\n\n\n\n\n\n\nThings you might have noticed\n\n\n\n\n\n🌿 The best substrate\n\nWing Sr is fixed during the larval stage: caterpillars eat host-plant leaves, and adult wing chitin is not remodelled.\nHerbaceous host plants (thistles, mallows, other Asteraceae) are the closest analogue: shallow roots, same Sr pool.\nSoil leachates, deep-rooted trees and small mammals sample other Sr pools or larger areas, and can be offset from host plants.\n\n🗺️ Is our dataset a good fit? Yes!\n\nIt is mostly plants (66%) plus small-range fauna (28%) that eat local plants, and everything that does not reflect local bioavailable Sr (waters, large or migratory animals, humans, fossils) has already been removed.\nSo it represents plant bioavailable Sr well. This is the isoscape we use for the butterflies in Module 3.\nWe also need an extent covering the whole potential natal range, ~1 km resolution (fine for a caterpillar), and a pixel-level uncertainty (SD) to feed assignR::pdRaster() in Module 3.\n\n⚖️ Substrate vs. coverage\n\nSubstrate matters: always ask whether your training data sample the same Sr pool as your organism.\nBut bioavailable Sr data are still scarce. Removing every substrate that is not a perfect match would leave large regions with no data, and the isoscape would get worse, not better.\nAt this stage, more data and better coverage beat perfect substrate matching. The uncertainty (SD) map absorbs part of the substrate differences. Substrate-specific isoscapes will make sense once we have many more data.\n\n⚠️ Watch out\n\n579 sites, but most are in the south-western Cape: the interior (Karoo, Northern Cape, Limpopo) will be predicted from covariates, not data.\n\nTake-home: think about substrate, but don’t screen your data to death. A well-screened, mostly plant dataset with good coverage is the right isoscape for a butterfly today.",
-    "crumbs": [
-      "Home",
-      "Workshop",
-      "1. Training data"
-    ]
-  },
-  {
-    "objectID": "01-training-data.html#summary",
-    "href": "01-training-data.html#summary",
-    "title": "1. Training data",
-    "section": "Summary",
-    "text": "Summary\n\n\n\n\n\n\nKey takeaways\n\n\n\n\nThe training data are screened, harmonised bioavailable ⁸⁷Sr/⁸⁶Sr: mostly plants, plus small-range fauna and soils.\nThe sites are strongly clustered in the south-western Cape. Keep this in mind when we evaluate the model.\nThe best isoscape depends on the organism you want to track.",
-    "crumbs": [
-      "Home",
-      "Workshop",
-      "1. Training data"
     ]
   },
   {

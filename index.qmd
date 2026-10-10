@@ -40,6 +40,7 @@ By the end of this module you will be able to:
 | 11:15 – 12:30 | [1. Training data](01-training-data.qmd) · [2. Covariates](02-covariates.qmd) · [3. Regression matrix](03-regression-matrix.qmd) |
 | 12:30 – 13:30 | Lunch (VSURF and the model run while we eat)                                 |
 | 13:30 – 14:30 | [4. Cross-validation](04-cross-validation.qmd) · [5. Interpretation](05-interpretation.qmd) · [6. Isoscape](06-isoscape.qmd) |
+| After the workshop | [Extra: applying this to your own study area](02b-own-study-area.qmd) |
 
 ## Before the workshop
 

@@ -17,6 +17,19 @@ date-modified: last-modified
 
 We now train a random forest on all the bioavailable data we prepared. Before selecting predictors and tuning the model, we need to decide **how we will evaluate it**, because the evaluation drives both.
 
+::: {.callout-note appearance="simple" icon="false"}
+## 🧭 The road map for this section
+
+| Step | Question | Tool |
+|------|----------|------|
+| 4.2 | How do we test the model fairly? | random vs. spatial cross-validation |
+| 4.3 | Which of the 42 covariates matter? | VSURF (random forest importance) |
+| 4.4 | Do some of them only "memorise" places? | spatial pruning |
+| 4.5 | Which predictor set transfers best to new regions? | random vs. spatial CV of each set |
+| 4.6 | Which model settings work best? | tuning `mtry` and `min.node.size` on spatial folds |
+| 4.7 | How good is the final model, and where does it fail? | observed vs. predicted, residual map |
+:::
+
 ## Step 4.1: Training set
 
 If Sections 1 to 3 took too long, you can start here: the training set is saved in `Output/`.
@@ -72,6 +85,15 @@ points(sr_agg$X, sr_agg$Y, col = rainbow(10)[spatial_folds], pch = 16, cex = 0.6
 
 The spatial blocks are very unequal: the smallest holds 5 sites and the largest 112.
 
+::: {.callout-tip icon="false" collapse="false"}
+## 📖 How to read the fold maps
+
+Each dot is a training site, coloured by the fold it belongs to.
+
+-   **Random CV (left):** the colours are mixed everywhere. When one fold is left out for testing, every test site still has neighbours of other colours (in the training set) a few hundred metres away.
+-   **Spatial CV (right):** each colour is a geographical block. When a block is left out, the model must predict a whole region it has never seen, just like the unsampled parts of the map.
+:::
+
 A good cross-validation should mimic the prediction situation (Meyer & Pebesma, 2022). We compare the distance from each test site to its nearest training site with the distance from each pixel of the map to its nearest training site.
 
 ```{r}
@@ -120,6 +142,18 @@ round(c(map = median(d_map), random_CV = median(d_random), spatial_CV = median(d
 ##        map  random_CV spatial_CV
 ##       83.8        5.5       80.5
 ```
+
+::: {.callout-tip icon="false" collapse="false"}
+## 📖 How to read Fig. S5
+
+Each curve is the distribution of a distance to the nearest training site (log scale: 1, 10, 100 km).
+
+-   **Red, map pixels → training sites:** the *prediction situation*. Most pixels of South Africa are 30–300 km from any data.
+-   **Green, random CV:** the test sites are 0.1–30 km from training data, far closer than the map pixels. Random CV tests an easier problem than the one we actually face.
+-   **Blue, spatial CV:** the curve overlaps the red one. Spatial CV tests the model at the distances where it will be used.
+
+**What to look for:** the CV curve that matches the red one gives the most honest error estimate.
+:::
 
 
 ::: {.callout-warning icon="false"}
@@ -204,7 +238,24 @@ vsurf_step <- "interp"
 vars_vsurf <- vsurf_sets[[vsurf_step]]
 ```
 
-![Output of Step 4.3: the VSURF steps. Bottom left: the interpretation step keeps 16 variables (red line)](images/step4-vsurf.png){width="80%"}
+![Output of Step 4.3: the four VSURF panels](images/step4-vsurf.png){width="80%"}
+
+::: {.callout-tip icon="false" collapse="false"}
+## 📖 How to read the VSURF plot
+
+VSURF draws four panels, one per step. On every x-axis, the variables are sorted from most to least important.
+
+| Panel | What it shows | What to look for in our run |
+|-------|---------------|-----------------------------|
+| **Top left: VI mean** | Mean variable importance (VI) of each of the 42 covariates, over 20 random forests. The red line is the noise threshold. | Importance drops very fast: a handful of covariates carry most of the signal. Variables below the red line are dropped (here only 1, so 41 are kept: `thres`). |
+| **Top right: VI standard deviation** | How much the importance of each variable varies between the forests. VSURF fits a tree (green) to this curve to set the noise threshold (red dashed line). | The importance of the top variables is stable; the tail is noisy. |
+| **Bottom left: nested models** | OOB error of random forests built with the top 1, 2, 3… variables. The red vertical line marks the interpretation set: the smallest model whose error is within 1 SD of the minimum. | The error falls steeply over the first ~5 variables, then is almost flat. The red line is at **16** variables (`interp`). |
+| **Bottom right: predictive models** | OOB error as variables are added one by one, keeping a variable only if it lowers the error enough. | Only **9** variables survive (`pred`), for about the same error. |
+
+**Units:** the OOB error is a mean squared error in (⁸⁷Sr/⁸⁶Sr)². An error of 1.5 × 10⁻⁵ is an RMSE of √(1.5 × 10⁻⁵) ≈ 0.0039, very close to the random CV RMSE (0.0039 in Step 4.6). That is no coincidence: the OOB error is a kind of random cross-validation, so it is just as optimistic.
+
+**Interpretation vs. prediction set:** the 16 `interp` variables include correlated "twins" (e.g. `r.srsrq1`, `.f05` and `.f25`) and the coarse layers (`r.salt`, `r.dust`, `r.volc`, `r.foss`). The 9 `pred` variables are fewer but still include the three bedrock layers and `r.salt`: VSURF removes variables that don't lower the OOB error, not variables that are correlated.
+:::
 
 *What you should see:*
 
@@ -262,6 +313,12 @@ training_rf <- sr_agg[, c("X87Sr86Sr", vars_final)]
 
 In our run, removing any single variable never improved the spatial-CV RMSE by more than 2%, so the spatial pruning kept all **16** VSURF variables.
 
+::: {.callout-tip icon="false" collapse="false"}
+## 📖 How to read the pruning output
+
+`pruning_path` has one row per step: the number of variables, the spatial-CV RMSE and the variable removed. Here it has a single row ("start (VSURF set)"): no removal helped by more than the 2% tolerance, which is why the script does not draw the pruning plot. Try a smaller `tol` in [Exercise 2](#exercises) to see variables being removed.
+:::
+
 ## Step 4.5: Compare the predictor sets
 
 For each set of predictors, we compare the R² obtained with random and with spatial cross-validation.
@@ -306,6 +363,17 @@ if (nrow(pruning_path) > 1) {
 
 ![Output of Step 4.5 (Fig. S6): random CV barely changes between predictor sets (0.75–0.79); spatial CV separates them (0.54–0.70)](images/figS6-predictor-sets.png){width="90%"}
 
+::: {.callout-tip icon="false" collapse="false"}
+## 📖 How to read Fig. S6
+
+Each pair of bars is one predictor set (number of variables below): grey = random CV R², orange = spatial CV R².
+
+-   **Grey bars are all alike (0.75–0.79):** random CV cannot tell the sets apart.
+-   **Orange bars differ a lot (0.54–0.70):** with all 42 candidates or the 41 `thres` variables, the spatial R² is low. Many weak or coordinate-like variables help the model recognise *places*, not *processes*.
+-   **The gap between grey and orange** is the optimism of random CV. It is largest for the sets with the most variables.
+-   **`pred` (9 variables) has the best spatial R² (0.70):** fewer, less redundant predictors transfer better to new regions. Our final set (16 variables, 0.66) keeps more processes for interpretation, at a small cost.
+:::
+
 ## Step 4.6: Tune and train the random forest
 
 -   We use the fast **ranger** implementation, which uses all the cores of your computer by itself.
@@ -348,6 +416,27 @@ save(RF_all, file = "Output/RF_all")
 RF_all
 RF_all$bestTune
 ```
+
+*What you should see (part of the output):*
+
+```
+##   mtry min.node.size    RMSE Rsquared
+##      3             5 0.00520    0.389
+##      5             5 0.00489    0.406
+##      8            10 0.00470    0.316   <- best (lowest RMSE)
+##     12             5 0.00473    0.329
+```
+
+::: {.callout-tip icon="false" collapse="false"}
+## 📖 How to read the tuning output
+
+Each row is one combination of hyperparameters, evaluated on the 10 spatial blocks.
+
+-   **`mtry`:** how many variables each split can choose from. Small values make trees more different from each other; large values let every tree use the strongest variable.
+-   **`min.node.size`:** the minimum number of sites in a final leaf. Larger values give smoother predictions.
+-   **RMSE** is the mean over the 10 blocks, and caret picks the lowest: `mtry = 8`, `min.node.size = 10`. The differences are small (0.0047–0.0054), so the model is not very sensitive to these settings.
+-   **Rsquared here is low (0.3–0.4)** because it is computed *within* each block, and each block covers a narrow range of ⁸⁷Sr/⁸⁶Sr. Don't compare it with the pooled R² below.
+:::
 
 For comparison, the classic random repeated 10-fold cross-validation with the same hyperparameters:
 
@@ -421,6 +510,15 @@ ggsave("Output/FigS2.pdf", p3, width = 14, height = 12)
 
 ![Output of Step 4.7 (Fig. S2): same model, same data: R² = 0.77 with random CV, 0.66 with spatial CV](images/figS2-obs-pred.png){width="85%"}
 
+::: {.callout-tip icon="false" collapse="false"}
+## 📖 How to read Fig. S2
+
+-   **Top row, observed vs. predicted:** each cell counts sites (darker = more). The dotted line is the 1:1 line (a perfect model); the black line is the regression through the points.
+-   **The black line is flatter than 1:1** in both panels: high values are under-predicted, and the lowest values are slightly over-predicted. Radiogenic sites (\> 0.73) are rare, so the model pulls them towards the mean. This is typical of random forests, which average many trees.
+-   **The spatial panel is more scattered and flatter** than the random one: predicting a region the model has never seen is harder.
+-   **Bottom row, residuals (predicted − observed):** a cloud centred on 0 with no trend would be ideal. The downward trend at high observed values is the same under-prediction of radiogenic sites.
+:::
+
 Where are the large errors of the spatial cross-validation?
 
 ```{r}
@@ -444,6 +542,16 @@ ggsave("Output/FigS7_residual_map.pdf", p_res, width = 8, height = 7)
 ```
 
 ![Output of Step 4.7 (Fig. S7): spatial-CV residuals (observed − predicted) at each site](images/figS7-residual-map.png){width="65%"}
+
+::: {.callout-tip icon="false" collapse="false"}
+## 📖 How to read Fig. S7
+
+Each dot is a site, coloured by its spatial-CV residual (observed − predicted): **red** = the model predicts too low, **blue** = too high, pale = good.
+
+-   **The errors cluster in space:** under-predicted (red) sites group in the north-east (around the Bushveld) and in KwaZulu-Natal; over-predicted (blue) sites group on parts of the west coast.
+-   Clustered residuals mean the model misses a **regional process**, for example an old radiogenic basement or a local dust source that no covariate describes well. They are also a sign of spatial autocorrelation, which is why random CV is optimistic.
+-   **What would you do?** Look for a covariate that explains the pattern, or collect more data in those regions.
+:::
 
 ::::::: think-pair-share
 ### Think · Pair · Share: random vs. spatial CV

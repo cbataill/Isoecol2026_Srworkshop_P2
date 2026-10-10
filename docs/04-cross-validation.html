@@ -409,6 +409,16 @@ In this section
 <h2 class="anchored" data-anchor-id="step-4.2-random-vs.-spatial-cross-validation">Step 4.2: Random vs.&nbsp;spatial cross-validation</h2>
 <p>In a regular (<strong>random</strong>) k-fold cross-validation, the sites are split at random into 10 folds, and each fold is predicted by a model trained on the other 9. But ⁸⁷Sr/⁸⁶Sr data are spatially clustered: in South Africa, most sites are in the south-western Cape. A test site almost always has a training site a few hundred metres away, with the same geology and the same ⁸⁷Sr/⁸⁶Sr. Random cross-validation therefore measures how well the model <strong>interpolates between nearby sites</strong>, not how well it predicts <strong>the large unsampled regions</strong> of the map.</p>
 <p>In a <strong>spatial-block</strong> cross-validation, the folds are geographical clusters of sites (here 10 clusters made with k-means on the X/Y coordinates). The model is always tested on a region it has not seen.</p>
+<div class="callout callout-style-simple callout-note">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-body-container">
+<p><strong>How are the blocks made?</strong> We choose the <em>number</em> of blocks (<code>centers = 10</code>); k-means then groups the sites into 10 geographical clusters, so the <em>size</em> of each block simply follows how the sites are clustered. k-means starts from random centres, but <code>nstart = 20</code> keeps the best of 20 starts and <code>set.seed(1)</code> makes the result reproducible. The block size is not estimated or optimised: we only <em>check</em> afterwards (Fig. S5) that the spatial CV distances look like the map’s. Methods such as kNNDM (<code>CAST::knndm()</code>, Linnenbrink et al.&nbsp;2024) go further and build the folds so that the two distance distributions match.</p>
+</div>
+</div>
+</div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Random folds (10-fold)</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>

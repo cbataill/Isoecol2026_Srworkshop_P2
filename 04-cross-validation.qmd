@@ -62,6 +62,10 @@ In a regular (**random**) k-fold cross-validation, the sites are split at random
 
 In a **spatial-block** cross-validation, the folds are geographical clusters of sites (here 10 clusters made with k-means on the X/Y coordinates). The model is always tested on a region it has not seen.
 
+::: {.callout-note appearance="simple"}
+**How are the blocks made?** We choose the *number* of blocks (`centers = 10`); k-means then groups the sites into 10 geographical clusters, so the *size* of each block simply follows how the sites are clustered. k-means starts from random centres, but `nstart = 20` keeps the best of 20 starts and `set.seed(1)` makes the result reproducible. The block size is not estimated or optimised: we only *check* afterwards (Fig. S5) that the spatial CV distances look like the map's. Methods such as kNNDM (`CAST::knndm()`, Linnenbrink et al. 2024) go further and build the folds so that the two distance distributions match.
+:::
+
 ```{r}
 #| label: folds
 # Random folds (10-fold)

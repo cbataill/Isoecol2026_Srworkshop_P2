@@ -17,7 +17,7 @@ date-modified: last-modified
 
 This script is adapted from Bataille et al. (2020), "Advances in global bioavailable strontium isoscapes". This version uses **South Africa** as a case study. Compared with the global version:
 
-1.  **Training data:** a harmonised and screened dataset of bioavailable ⁸⁷Sr/⁸⁶Sr in the ARDUOUS format (prepared in Module 1), mostly from plants.
+1.  **Training data:** a harmonised and screened dataset of bioavailable ⁸⁷Sr/⁸⁶Sr for South Africa in the ARDUOUS format, mostly from plants.
 2.  **Covariates:** the global Eckert IV 1 km rasters are already clipped to South Africa, so no cropping is needed and everything runs on a laptop.
 3.  **New regional covariates:** African soil chemistry (iSDA Africa), the 1:1M geological map of South Africa, the South African vegetation map, and neighbourhood (5, 10, 25 km) means of the bedrock ⁸⁷Sr/⁸⁶Sr and geological age.
 4.  **Spatial cross-validation:** we compare random and spatial-block cross-validation, and use the spatial one to prune the predictors and tune the model.
@@ -82,7 +82,13 @@ eck4 <- "+proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"
 
 ## Step 1.1: Import the training data
 
-The training dataset `Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv` has already been harmonised and screened for you (this is what we did in Module 1 with the ARDUOUS template).
+The training dataset `Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv` has already been harmonised and screened for you, in the ARDUOUS format.
+
+::: callout-note
+## Not the Module 1 dataset
+
+This is **not** the dataset screened in [Module 1](https://github.com/stantis/IsoEcolWorkshop2026). It is a separate compilation for South Africa (SrBaseline, the Wang compilation and IsoBank), cleaned for this module. The screening steps are listed below.
+:::
 
 **This dataset mostly represents bioavailable ⁸⁷Sr/⁸⁶Sr from plants** (608 of 927 records, 66%), complemented by modern fauna with small home ranges (259 records, 28%: rodents, hyraxes, hares, snails, tortoises, small antelopes) and soil leachates (60 records, 6%). It includes 579 distinct sampling locations.
 

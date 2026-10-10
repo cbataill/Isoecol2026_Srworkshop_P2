@@ -22,7 +22,7 @@ Build a random forest 87Sr/86Sr isoscape for South Africa.
 
 ## What is different from the global / North America version?
 
-1. **Training data**: a harmonised and screened dataset of bioavailable 87Sr/86Sr for South Africa in the ARDUOUS format (prepared in Module 1), mostly from plants.
+1. **Training data**: a harmonised and screened dataset of bioavailable 87Sr/86Sr for South Africa in the ARDUOUS format (a separate compilation, not the dataset screened in Module 1), mostly from plants.
 2. **Covariates**: the global Eckert IV 1 km rasters have already been clipped to South Africa for you (folder `Project_Raster/clipped_za`). No cropping is needed, and the rasters are small enough to run on a laptop.
 3. **New regional covariates**: in addition to the global covariates, we have high-resolution African soil chemistry (iSDA Africa), the 1:1M geological map of South Africa and the South African vegetation map. We also compute neighbourhood (5, 10, 25 km) means of the bedrock 87Sr/86Sr and geological age (Step 2.8), which substantially improve the predictions in unsampled regions.
 4. **Spatial cross-validation**: we compare random and spatial-block cross-validation (Step 4.2) and we use the spatial cross-validation to prune the predictors selected by VSURF (Step 4.4) and to tune the model (Step 4.6).
@@ -88,7 +88,7 @@ eck4 <- "+proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"
 
 #### 1.1. Import the bioavailable 87Sr/86Sr training data
 
-The training dataset `Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv` has already been harmonised and screened for you (this is what we did in Module 1 with the ARDUOUS template).
+The training dataset `Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv` has already been harmonised and screened for you in the ARDUOUS format. It is not the dataset screened in Module 1: it is a separate compilation for South Africa (SrBaseline, the Wang compilation and IsoBank).
 
 
 **This dataset mostly represents bioavailable 87Sr/86Sr from plants** (608 of 927 records, 66%), complemented by modern fauna with small home ranges (259 records, 28%: rodents, hyraxes, hares, snails, tortoises, small antelopes) and soil leachates (60 records, 6%). It includes 579 distinct sampling locations.

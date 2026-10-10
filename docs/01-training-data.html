@@ -308,7 +308,7 @@ In this section
 <h2 class="anchored" data-anchor-id="overview">Overview</h2>
 <p>This script is adapted from Bataille et al.&nbsp;(2020), “Advances in global bioavailable strontium isoscapes”. This version uses <strong>South Africa</strong> as a case study. Compared with the global version:</p>
 <ol type="1">
-<li><strong>Training data:</strong> a harmonised and screened dataset of bioavailable ⁸⁷Sr/⁸⁶Sr in the ARDUOUS format (prepared in Module 1), mostly from plants.</li>
+<li><strong>Training data:</strong> a harmonised and screened dataset of bioavailable ⁸⁷Sr/⁸⁶Sr for South Africa in the ARDUOUS format, mostly from plants.</li>
 <li><strong>Covariates:</strong> the global Eckert IV 1 km rasters are already clipped to South Africa, so no cropping is needed and everything runs on a laptop.</li>
 <li><strong>New regional covariates:</strong> African soil chemistry (iSDA Africa), the 1:1M geological map of South Africa, the South African vegetation map, and neighbourhood (5, 10, 25 km) means of the bedrock ⁸⁷Sr/⁸⁶Sr and geological age.</li>
 <li><strong>Spatial cross-validation:</strong> we compare random and spatial-block cross-validation, and use the spatial one to prune the predictors and tune the model.</li>
@@ -380,10 +380,23 @@ More resources
 </section>
 <section id="step-1.1-import-the-training-data" class="level2">
 <h2 class="anchored" data-anchor-id="step-1.1-import-the-training-data">Step 1.1: Import the training data</h2>
-<p>The training dataset <code>Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv</code> has already been harmonised and screened for you (this is what we did in Module 1 with the ARDUOUS template).</p>
+<p>The training dataset <code>Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv</code> has already been harmonised and screened for you, in the ARDUOUS format.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Not the Module 1 dataset
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This is <strong>not</strong> the dataset screened in <a href="https://github.com/stantis/IsoEcolWorkshop2026">Module 1</a>. It is a separate compilation for South Africa (SrBaseline, the Wang compilation and IsoBank), cleaned for this module. The screening steps are listed below.</p>
+</div>
+</div>
 <p><strong>This dataset mostly represents bioavailable ⁸⁷Sr/⁸⁶Sr from plants</strong> (608 of 927 records, 66%), complemented by modern fauna with small home ranges (259 records, 28%: rodents, hyraxes, hares, snails, tortoises, small antelopes) and soil leachates (60 records, 6%). It includes 579 distinct sampling locations.</p>
 <div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -392,7 +405,7 @@ Screening applied
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <ul>
 <li>only records within South Africa, with coordinates and 0.700 &lt; ⁸⁷Sr/⁸⁶Sr &lt; 0.800;</li>
@@ -476,7 +489,7 @@ Screening applied
 </div>
 </section>
 <div class="callout callout-style-default callout-caution callout-titled">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -485,7 +498,7 @@ Things you might have noticed
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div id="callout-5" class="callout-5-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p><strong>🌿 The best substrate</strong></p>
 <ul>

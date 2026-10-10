@@ -10,7 +10,7 @@ toc: true
 
 Welcome to Module 2 of our workshop, "Strontium isotope geolocation for terrestrial ecology," held at The 14th International Conference on the Applications of Stable Isotope Techniques to Ecological Studies (ISOECOL 2026) in Hong Kong!
 
-In Module 1, we screened bioavailable ⁸⁷Sr/⁸⁶Sr data with IsoBank and the ARDUOUS template. Today, we use those data to build a **bioavailable ⁸⁷Sr/⁸⁶Sr isoscape** for South Africa with random forest regression. In [Module 3](https://meganreich.github.io/Isoecol2026_Srworkshop_P3/), Megan will use this isoscape to find where painted lady butterflies came from.
+In [Module 1](https://github.com/stantis/IsoEcolWorkshop2026), Chris showed how to screen bioavailable ⁸⁷Sr/⁸⁶Sr data with IsoBank and the ARDUOUS template. Today, we use a **different, already-cleaned dataset for South Africa** (not the one screened in Module 1) to build a **bioavailable ⁸⁷Sr/⁸⁶Sr isoscape** with random forest regression. In [Module 3](https://meganreich.github.io/Isoecol2026_Srworkshop_P3/), Megan will use this isoscape to find where painted lady butterflies came from.
 
 ::: {.callout-note appearance="simple"}
 ## How to use this site

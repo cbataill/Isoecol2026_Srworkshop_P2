@@ -434,7 +434,7 @@
     "href": "index.html#what-youll-learn",
     "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
     "section": "What you’ll learn",
-    "text": "What you’ll learn\nBy the end of this module you will be able to:\n\nBuild a regression matrix from bioavailable ⁸⁷Sr/⁸⁶Sr data and geospatial covariates\nChoose covariates using process knowledge, and deal with correlated covariates\nSelect predictors and evaluate a random forest model with random and spatial cross-validation\nInterpret variable importance and partial dependence plots\nMap the isoscape and its uncertainty with a quantile random forest",
+    "text": "What you’ll learn\nBy the end of this module you will be able to:\n\nExplain how a random forest builds a prediction from many decision trees\nBuild a regression matrix from bioavailable ⁸⁷Sr/⁸⁶Sr data and geospatial covariates\nChoose covariates using process knowledge, and deal with correlated covariates\nSelect predictors and evaluate a random forest model with random and spatial cross-validation\nInterpret variable importance and partial dependence plots\nMap the isoscape and its uncertainty with a quantile random forest",
     "crumbs": [
       "Home",
       "Welcome"
@@ -445,7 +445,7 @@
     "href": "index.html#schedule",
     "title": "IsoEcol 2026: Strontium isotope geolocation for terrestrial ecology",
     "section": "Schedule",
-    "text": "Schedule\n\n\n\nTime\nSection\n\n\n\n\nIn advance\nBefore the workshop\n\n\n11:15 – 12:30\n1. Training data · 2. Covariates · 3. Regression matrix\n\n\n12:30 – 13:30\nLunch (VSURF and the model run while we eat)\n\n\n13:30 – 14:30\n4. Cross-validation · 5. Interpretation · 6. Isoscape\n\n\nAfter the workshop\nExtra: applying this to your own study area",
+    "text": "Schedule\n\n\n\nTime\nSection\n\n\n\n\nIn advance\nBefore the workshop\n\n\n11:15 – 12:30\n0. How random forest works · 1. Training data · 2. Covariates · 3. Regression matrix\n\n\n12:30 – 13:30\nLunch (VSURF and the model run while we eat)\n\n\n13:30 – 14:30\n4. Cross-validation · 5. Interpretation · 6. Isoscape\n\n\nAfter the workshop\nExtra: applying this to your own study area",
     "crumbs": [
       "Home",
       "Welcome"
@@ -482,6 +482,114 @@
     "crumbs": [
       "Home",
       "Welcome"
+    ]
+  },
+  {
+    "objectID": "00-random-forest.html",
+    "href": "00-random-forest.html",
+    "title": "0. How random forest works",
+    "section": "",
+    "text": "In this section\n\n\n\n\nYou’ll learn: how a regression tree splits the data, why one tree is not enough, and how bagging and random forest fix it\nYou’ll need: nothing to run: this page has no code for RStudio\nTime: about 15 minutes",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "0. How random forest works"
+    ]
+  },
+  {
+    "objectID": "00-random-forest.html#overview",
+    "href": "00-random-forest.html#overview",
+    "title": "0. How random forest works",
+    "section": "Overview",
+    "text": "Overview\nIn the talk, we saw that bioavailable ⁸⁷Sr/⁸⁶Sr varies at many scales: continental terranes, regional bedrock, atmospheric gradients (dust, sea salt) and local sedimentary features. No single map captures all of them. A random forest learns how ⁸⁷Sr/⁸⁶Sr relates to many maps at once (geology, climate, soils, atmospheric deposition…), and then predicts it everywhere.\n\n\n\n\n\n\n\n\n\n\n\n\n✅ Why random forest for Sr?\n\n\n\n\nCombines many geospatial layers seamlessly\nCaptures non-linear relationships and interactions\nCan map multiscale patterns of bioavailable ⁸⁷Sr/⁸⁶Sr\nMore accurate than interpolation or domain mapping\n\n\n\n\n\n\n\n\n\n\n\n⚠️ Challenges\n\n\n\n\nNeeds a lot of training data\nMore computing than simpler methods\nHarder to interpret: we need tools to look inside\nIts uncertainty maps have limitations",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "0. How random forest works"
+    ]
+  },
+  {
+    "objectID": "00-random-forest.html#step-0.1-a-decision-tree-for-regression",
+    "href": "00-random-forest.html#step-0.1-a-decision-tree-for-regression",
+    "title": "0. How random forest works",
+    "section": "Step 0.1: A decision tree for regression",
+    "text": "Step 0.1: A decision tree for regression\nA regression tree asks a series of yes/no questions about the covariates, and each answer sends a site down one branch. At the end of a branch (a leaf), the prediction is the mean ⁸⁷Sr/⁸⁶Sr of the training sites that ended up there.\n\n\n  \n  \n    \n    \n    \n    \n    \n    \n    \n  \n  \n    yesno\n    yesno\n    yesno\n  \n  \n    Age &lt; 100 Myr?\n    Coast &lt; 10 km?\n    Coast &lt; 50 km?\n    Age &lt; 10 Myr?\n    Coast &lt; 100 km?\n    Age &lt; 300 Myr?\n    Coast &lt; 70 km?\n  \n  \n    0.7090.710\n    0.7110.712\n    0.7110.713\n    0.7150.720\n  \n  leaves: mean ⁸⁷Sr/⁸⁶Sr of the training sites in each group\n\nA toy regression tree: young rocks near the coast end up with low, seawater-like ⁸⁷Sr/⁸⁶Sr; old rocks far inland with high, radiogenic values.\n\nHow does the tree choose its questions? At each node, the algorithm tries every covariate and every possible threshold, and keeps the split that makes the two groups as homogeneous as possible (the largest drop in the variance of ⁸⁷Sr/⁸⁶Sr). It repeats this in each group until the groups are small.\n\n\n\n\n\n\nProblems with a single tree\n\n\n\n\nOverfitting: a deep tree ends up memorising the training sites, noise included.\nInstability: add or remove a few sites and the whole tree can change.\nBlocky predictions: a tree predicts one value per leaf, so a single-tree isoscape would be a patchwork of flat zones with sharp steps.\nGreedy splits: each split is the best now, not necessarily the best for the whole tree.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "0. How random forest works"
+    ]
+  },
+  {
+    "objectID": "00-random-forest.html#step-0.2-bagging-many-trees-on-resampled-data",
+    "href": "00-random-forest.html#step-0.2-bagging-many-trees-on-resampled-data",
+    "title": "0. How random forest works",
+    "section": "Step 0.2: Bagging, many trees on resampled data",
+    "text": "Step 0.2: Bagging, many trees on resampled data\nBagging (bootstrap aggregation) grows many trees, each on a different bootstrap sample of the sites: sites drawn at random with replacement, so each tree sees about two-thirds of them (some twice), and never sees the remaining third. The prediction is the average of all trees. Averaging cancels out much of the noise each tree has memorised.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "0. How random forest works"
+    ]
+  },
+  {
+    "objectID": "00-random-forest.html#step-0.3-random-forest-adding-randomness-to-the-splits",
+    "href": "00-random-forest.html#step-0.3-random-forest-adding-randomness-to-the-splits",
+    "title": "0. How random forest works",
+    "section": "Step 0.3: Random forest, adding randomness to the splits",
+    "text": "Step 0.3: Random forest, adding randomness to the splits\nA random forest is bagging plus one more trick: at each split, a tree may only choose among a random subset of the covariates (mtry of them). This stops every tree from starting with the same strong covariate, so the trees are more different from each other, and their average is more robust.\n\n\n  \n  \n  Training sites\n  579 sites × covariates\n  \n    \n    \n    \n  \n  \n    in-bag~2/3\n    OOB~1/3\n    in-bag~2/3\n    OOB~1/3\n    in-bag~2/3\n    OOB~1/3\n    · · ·\n  \n  \n    \n    \n    \n  \n  · · ·\n  each split: best of mtry random covariates\n  \n  Prediction = average of all trees\n\nEach tree grows on its own bootstrap sample and picks among a random subset of covariates at every split. The sites a tree never saw (out-of-bag, OOB) are used to test it.\n\n\n\n\n\n\n\n💡 The out-of-bag (OOB) error\n\n\n\nEach site is left out of about a third of the trees. Predicting each site with only the trees that never saw it gives a free estimate of the error, the OOB error, without a separate test set. VSURF uses it to rank the covariates (Step 4.3). But the OOB sites are scattered among the training sites, so the OOB error behaves like a random cross-validation: it is optimistic for spatial data (Step 4.2).",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "0. How random forest works"
+    ]
+  },
+  {
+    "objectID": "00-random-forest.html#step-0.4-see-it-for-yourself",
+    "href": "00-random-forest.html#step-0.4-see-it-for-yourself",
+    "title": "0. How random forest works",
+    "section": "Step 0.4: See it for yourself",
+    "text": "Step 0.4: See it for yourself\nA toy example: 120 sites where ⁸⁷Sr/⁸⁶Sr rises with distance from the coast (less sea-salt Sr) and jumps at 260 km where the bedrock changes. Move the sliders.\n\n\n\n\n\n\nThe sliders only work on this website, not in RStudio.\n\n\n\n\nviewof ntree = Inputs.range([1, 200], {value: 1, step: 1, label: \"Number of trees\"})\nviewof depth = Inputs.range([1, 10], {value: 8, step: 1, label: \"Maximum tree depth\"})\nviewof showTrees = Inputs.toggle({label: \"Show the individual trees\", value: true})\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nrf = {\n  const mulberry32 = a =&gt; function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a&gt;&gt;&gt;15,1|a);t=t+Math.imul(t^t&gt;&gt;&gt;7,61|t)^t;return((t^t&gt;&gt;&gt;14)&gt;&gt;&gt;0)/4294967296}\n  const gauss = r =&gt; {let u=0,v=0;while(u===0)u=r();while(v===0)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}\n  const truth = x =&gt; 0.7092 + 0.009*(1-Math.exp(-x/60)) + (x&gt;260 ? 0.006 : 0)\n  const r0 = mulberry32(42)\n  const sites = Array.from({length:120}, () =&gt; { const x = 10 + r0()*380; return {x, y: truth(x) + 0.0015*gauss(r0)} })\n  function buildTree(pts, d, minLeaf){\n    const mean = pts.reduce((s,p)=&gt;s+p.y,0)/pts.length\n    if (d===0 || pts.length &lt; 2*minLeaf) return {leaf:true, value:mean}\n    const s = [...pts].sort((a,b)=&gt;a.x-b.x)\n    let best=null, bestSSE=Infinity, sumL=0, sqL=0\n    const tot=s.reduce((a,p)=&gt;a+p.y,0), totSq=s.reduce((a,p)=&gt;a+p.y*p.y,0)\n    for (let i=0;i&lt;s.length-1;i++){\n      sumL+=s[i].y; sqL+=s[i].y*s[i].y\n      const nL=i+1, nR=s.length-nL\n      if (nL&lt;minLeaf || nR&lt;minLeaf || s[i].x===s[i+1].x) continue\n      const sse=(sqL-sumL*sumL/nL)+((totSq-sqL)-(tot-sumL)**2/nR)\n      if (sse&lt;bestSSE){bestSSE=sse; best=(s[i].x+s[i+1].x)/2}\n    }\n    if (best===null) return {leaf:true, value:mean}\n    return {leaf:false, t:best, left:buildTree(s.filter(p=&gt;p.x&lt;=best),d-1,minLeaf), right:buildTree(s.filter(p=&gt;p.x&gt;best),d-1,minLeaf)}\n  }\n  function predict(n, x){ return n.leaf ? n.value : predict(x&lt;=n.t ? n.left : n.right, x) }\n  function grow(ntree, depth){\n    return Array.from({length:ntree}, (_,k) =&gt; { const r=mulberry32(1000+k); return buildTree(Array.from({length:sites.length}, () =&gt; sites[Math.floor(r()*sites.length)]), depth, 3) })\n  }\n  return {sites, truth, predict, grow}\n}\ngrid = Array.from({length:201}, (_,i)=&gt;i*2)\ntrees = rf.grow(ntree, depth)\nforestLine = grid.map(x =&gt; ({x, y: trees.reduce((s,t)=&gt;s+rf.predict(t,x),0)/trees.length}))\ntreeLines = showTrees ? trees.slice(0,30).flatMap((t,k) =&gt; grid.map(x =&gt; ({x, y: rf.predict(t,x), tree:k}))) : []\ntruthLine = grid.map(x =&gt; ({x, y: rf.truth(x)}))\nrmse = Math.sqrt(grid.reduce((s,x,i)=&gt;s+(forestLine[i].y-rf.truth(x))**2,0)/grid.length)\n\nmd`**${ntree === 1 ? \"One tree\" : ntree + \" trees\"}**, depth ${depth} · error against the true curve (RMSE) = **${rmse.toFixed(4)}**`\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nPlot.plot({\n  height: 360, marginLeft: 60,\n  x: {label: \"Distance to the coast (km)\", domain: [0, 400]},\n  y: {label: \"⁸⁷Sr/⁸⁶Sr\", tickFormat: d =&gt; d.toFixed(3), grid: true},\n  marks: [\n    Plot.dot(rf.sites, {x: \"x\", y: \"y\", fill: \"#9aa5ad\", r: 2.5}),\n    Plot.line(truthLine, {x: \"x\", y: \"y\", stroke: \"#333\", strokeDasharray: \"4,4\"}),\n    Plot.line(treeLines, {x: \"x\", y: \"y\", z: \"tree\", stroke: \"#8a3b12\", strokeOpacity: 0.25, curve: \"step\"}),\n    Plot.line(forestLine, {x: \"x\", y: \"y\", stroke: \"#1f4e6b\", strokeWidth: 2.5, curve: \"step\"})\n  ]\n})\n\n\n\n\n\n\n\n\nGrey dots: training sites. Dashed: the true relationship. Thin orange: individual trees (up to 30 shown). Blue: the prediction (the average of all trees).\n\n\n\n\n\n\n🧩 Your turn\n\n\n\n\nWith 1 tree and depth 8, how does the prediction look? Does it follow the noise or the true curve?\nIncrease the number of trees to 50, then 200. What happens to the blue line and to the RMSE?\nWith 200 trees, set the depth to 1, then 2, then 4. What goes wrong when the trees are too shallow?\n\n\n\n\n\n\n\n\n\nThings you might have noticed\n\n\n\n\n\n\nOne deep tree is a staircase that chases individual sites: it overfits the noise.\nAveraging many trees smooths the staircase and brings the prediction closer to the true curve: the RMSE drops. Beyond ~50 trees it barely changes, which is why a few hundred trees are enough.\nVery shallow trees can’t capture the shape (a depth-1 tree has only one step): the forest underfits. Random forests usually grow deep trees and let averaging remove the noise.\n\nNotice also the edges: beyond the last site (here near 0 and 390 km), the prediction is flat. A random forest cannot extrapolate beyond the range of its training data.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "0. How random forest works"
+    ]
+  },
+  {
+    "objectID": "00-random-forest.html#step-0.5-from-a-forest-to-an-isoscape",
+    "href": "00-random-forest.html#step-0.5-from-a-forest-to-an-isoscape",
+    "title": "0. How random forest works",
+    "section": "Step 0.5: From a forest to an isoscape",
+    "text": "Step 0.5: From a forest to an isoscape\nFor an isoscape, each “site” is a training sample with its ⁸⁷Sr/⁸⁶Sr and the values of ~60 covariates under it. Once the forest is trained, we give it the covariates of every 1 km pixel and it predicts ⁸⁷Sr/⁸⁶Sr there.\n\n\n\nThe random forest isoscape workflow (Bataille et al. 2020): overlay the sites on the covariates, build the regression matrix, select and train the model, then predict every pixel\n\n\nAnd the uncertainty? Each tree gives its own prediction for a pixel. A quantile random forest keeps the whole spread of training values in the leaves, not just their mean, so we can read the 15.9% and 84.1% quantiles and turn them into a standard deviation. That is our uncertainty map (Section 6).",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "0. How random forest works"
+    ]
+  },
+  {
+    "objectID": "00-random-forest.html#key-words-for-today",
+    "href": "00-random-forest.html#key-words-for-today",
+    "title": "0. How random forest works",
+    "section": "Key words for today",
+    "text": "Key words for today\n\n\n\n\n\n\n\n\nTerm\nMeaning\nIn the script\n\n\n\n\nBootstrap sample\nSites drawn at random with replacement; each tree gets its own\ndone by ranger\n\n\nOOB error\nError on the sites a tree never saw; behaves like random CV\nused by VSURF\n\n\nnum.trees\nNumber of trees in the forest\n500–1000\n\n\nmtry\nNumber of covariates a split can choose from\ntuned in Step 4.6\n\n\nmin.node.size\nMinimum number of sites in a leaf\ntuned in Step 4.6\n\n\nVariable importance\nHow much the error grows when one covariate is shuffled\nStep 4.8\n\n\nPartial dependence\nPrediction as one covariate varies, others averaged\nStep 4.8\n\n\nQuantile random forest\nKeeps the spread in each leaf, to map uncertainty\nquantreg = TRUE",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "0. How random forest works"
+    ]
+  },
+  {
+    "objectID": "00-random-forest.html#summary",
+    "href": "00-random-forest.html#summary",
+    "title": "0. How random forest works",
+    "section": "Summary",
+    "text": "Summary\n\n\n\n\n\n\nKey takeaways\n\n\n\n\nA regression tree splits the sites with yes/no questions on the covariates; each leaf predicts the mean ⁸⁷Sr/⁸⁶Sr of its sites.\nOne tree overfits and is unstable. Bagging averages many trees grown on bootstrap samples; random forest also randomises the covariates at each split.\nThe OOB error is a free error estimate, but it behaves like random cross-validation.\nRandom forests cannot extrapolate beyond their training data.",
+    "crumbs": [
+      "Home",
+      "Workshop",
+      "0. How random forest works"
     ]
   },
   {

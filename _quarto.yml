@@ -3,6 +3,7 @@ project:
   output-dir: docs            # "docs" makes GitHub Pages publishing easy
   render:
     - index.qmd
+    - 00-random-forest.qmd
     - 01-training-data.qmd
     - 02-covariates.qmd
     - 02b-own-study-area.qmd
@@ -50,6 +51,7 @@ website:
         text: Welcome
       - section: "Workshop"
         contents:
+          - 00-random-forest.qmd
           - 01-training-data.qmd
           - 02-covariates.qmd
           - href: 02b-own-study-area.qmd

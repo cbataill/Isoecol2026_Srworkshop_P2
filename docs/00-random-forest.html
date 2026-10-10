@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.42">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="The ideas behind the model we build today">
+
+<title>0. How random forest works – Strontium isotope geolocation for terrestrial ecology: Module 2</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./01-training-data.html" rel="next">
+<link href="./index.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-b2d9fb69a705f84b18c767c904a7c72d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-333addd1bd3a146788b4b69de38e3784.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script type="module" src="site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
+<link href="site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
+
+
+</head>
+
+<body class="nav-sidebar docked nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Strontium isotope geolocation for terrestrial ecology: Module 2</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="https://meganreich.github.io/Isoecol2026_Srworkshop_P3/"> 
+<span class="menu-text">Module 3 →</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/cbataill/Isoecol2026_Srworkshop_P2"> <i class="bi bi-github" role="img" aria-label="GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-reader-toggle quarto-navigation-tool px-1" onclick="window.quartoToggleReader(); return false;" title="Toggle reader mode">
+  <div class="quarto-reader-toggle-btn">
+  <i class="bi"></i>
+  </div>
+</a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./00-random-forest.html">Workshop</a></li><li class="breadcrumb-item"><a href="./00-random-forest.html">0. How random forest works</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Welcome</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Workshop</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./00-random-forest.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">0. How random forest works</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-training-data.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">1. Training data</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-covariates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">2. Covariates</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02b-own-study-area.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Extra: your own study area</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-regression-matrix.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">3. Regression matrix</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-cross-validation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">4. Predictor selection and cross-validation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-interpretation.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">5. Interpreting the model</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-isoscape.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">6. Isoscape and uncertainty</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#step-0.1-a-decision-tree-for-regression" id="toc-step-0.1-a-decision-tree-for-regression" class="nav-link" data-scroll-target="#step-0.1-a-decision-tree-for-regression">Step 0.1: A decision tree for regression</a></li>
+  <li><a href="#step-0.2-bagging-many-trees-on-resampled-data" id="toc-step-0.2-bagging-many-trees-on-resampled-data" class="nav-link" data-scroll-target="#step-0.2-bagging-many-trees-on-resampled-data">Step 0.2: Bagging, many trees on resampled data</a></li>
+  <li><a href="#step-0.3-random-forest-adding-randomness-to-the-splits" id="toc-step-0.3-random-forest-adding-randomness-to-the-splits" class="nav-link" data-scroll-target="#step-0.3-random-forest-adding-randomness-to-the-splits">Step 0.3: Random forest, adding randomness to the splits</a></li>
+  <li><a href="#step-0.4-see-it-for-yourself" id="toc-step-0.4-see-it-for-yourself" class="nav-link" data-scroll-target="#step-0.4-see-it-for-yourself">Step 0.4: See it for yourself</a></li>
+  <li><a href="#step-0.5-from-a-forest-to-an-isoscape" id="toc-step-0.5-from-a-forest-to-an-isoscape" class="nav-link" data-scroll-target="#step-0.5-from-a-forest-to-an-isoscape">Step 0.5: From a forest to an isoscape</a></li>
+  <li><a href="#key-words-for-today" id="toc-key-words-for-today" class="nav-link" data-scroll-target="#key-words-for-today">Key words for today</a></li>
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  <li><a href="#next-1.-training-data" id="toc-next-1.-training-data" class="nav-link" data-scroll-target="#next-1.-training-data"><strong>Next:</strong> 1. Training data →</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./00-random-forest.html">Workshop</a></li><li class="breadcrumb-item"><a href="./00-random-forest.html">0. How random forest works</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">0. How random forest works</h1>
+<p class="subtitle lead">From one decision tree to a forest, and to an isoscape</p>
+</div>
+
+<div>
+  <div class="description">
+    The ideas behind the model we build today
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    <div>
+    <div class="quarto-title-meta-heading">Modified</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date-modified">October 10, 2026</p>
+    </div>
+  </div>
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="callout callout-style-simple callout-note no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+In this section
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><strong>You’ll learn:</strong> how a regression tree splits the data, why one tree is not enough, and how bagging and random forest fix it</li>
+<li><strong>You’ll need:</strong> nothing to run: this page has no code for RStudio</li>
+<li><strong>Time:</strong> about 15 minutes</li>
+</ul>
+</div>
+</div>
+<section id="overview" class="level2">
+<h2 class="anchored" data-anchor-id="overview">Overview</h2>
+<p>In the talk, we saw that bioavailable ⁸⁷Sr/⁸⁶Sr varies at many scales: continental terranes, regional bedrock, atmospheric gradients (dust, sea salt) and local sedimentary features. No single map captures all of them. A <strong>random forest</strong> learns how ⁸⁷Sr/⁸⁶Sr relates to many maps at once (geology, climate, soils, atmospheric deposition…), and then predicts it everywhere.</p>
+<div>
+
+</div>
+<div class="quarto-layout-panel" data-layout-ncol="2">
+<div class="quarto-layout-row">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="callout callout-style-default callout-tip no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+✅ Why random forest for Sr?
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Combines many geospatial layers seamlessly</li>
+<li>Captures non-linear relationships and interactions</li>
+<li>Can map multiscale patterns of bioavailable ⁸⁷Sr/⁸⁶Sr</li>
+<li>More accurate than interpolation or domain mapping</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="callout callout-style-default callout-warning no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+⚠️ Challenges
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>Needs a lot of training data</li>
+<li>More computing than simpler methods</li>
+<li>Harder to interpret: we need tools to look inside</li>
+<li>Its uncertainty maps have limitations</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="step-0.1-a-decision-tree-for-regression" class="level2">
+<h2 class="anchored" data-anchor-id="step-0.1-a-decision-tree-for-regression">Step 0.1: A decision tree for regression</h2>
+<p>A regression tree asks a series of yes/no questions about the covariates, and each answer sends a site down one branch. At the end of a branch (a <strong>leaf</strong>), the prediction is the <strong>mean ⁸⁷Sr/⁸⁶Sr of the training sites that ended up there</strong>.</p>
+<figure style="margin:1.5rem 0" class="figure">
+<svg viewbox="0 0 820 380" role="img" aria-label="Example regression tree splitting sites by geological age and distance to the coast" style="width:100%;height:auto;font-family:'Source Sans 3',sans-serif">
+  <defs><marker id="ar" viewbox="0 0 10 10" refx="9" refy="5" markerwidth="7" markerheight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#7a8a96"></path></marker></defs>
+  <g stroke="#7a8a96" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+    <path d="M410 62 L225 128"></path><path d="M410 62 L595 128"></path>
+    <path d="M225 168 L120 238"></path><path d="M225 168 L330 238"></path>
+    <path d="M595 168 L490 238"></path><path d="M595 168 L700 238"></path>
+    <path d="M120 278 L80 330"></path><path d="M120 278 L160 330"></path>
+    <path d="M330 278 L290 330"></path><path d="M330 278 L370 330"></path>
+    <path d="M490 278 L450 330"></path><path d="M490 278 L530 330"></path>
+    <path d="M700 278 L660 330"></path><path d="M700 278 L740 330"></path>
+  </g>
+  <g font-size="12" fill="#5b6b77" text-anchor="middle">
+    <text x="300" y="88">yes</text><text x="520" y="88">no</text>
+    <text x="158" y="198">yes</text><text x="292" y="198">no</text>
+    <text x="528" y="198">yes</text><text x="662" y="198">no</text>
+  </g>
+  <g font-size="14" text-anchor="middle">
+    <rect x="320" y="22" width="180" height="40" rx="8" fill="#1f4e6b"></rect><text x="410" y="47" fill="#fff">Age &lt; 100 Myr?</text>
+    <rect x="140" y="128" width="170" height="40" rx="8" fill="#e8eef2" stroke="#1f4e6b"></rect><text x="225" y="153" fill="#1f4e6b">Coast &lt; 10 km?</text>
+    <rect x="510" y="128" width="170" height="40" rx="8" fill="#e8eef2" stroke="#1f4e6b"></rect><text x="595" y="153" fill="#1f4e6b">Coast &lt; 50 km?</text>
+    <rect x="45" y="238" width="150" height="40" rx="8" fill="#e8eef2" stroke="#1f4e6b"></rect><text x="120" y="263" fill="#1f4e6b">Age &lt; 10 Myr?</text>
+    <rect x="250" y="238" width="160" height="40" rx="8" fill="#e8eef2" stroke="#1f4e6b"></rect><text x="330" y="263" fill="#1f4e6b">Coast &lt; 100 km?</text>
+    <rect x="415" y="238" width="150" height="40" rx="8" fill="#e8eef2" stroke="#1f4e6b"></rect><text x="490" y="263" fill="#1f4e6b">Age &lt; 300 Myr?</text>
+    <rect x="625" y="238" width="150" height="40" rx="8" fill="#e8eef2" stroke="#1f4e6b"></rect><text x="700" y="263" fill="#1f4e6b">Coast &lt; 70 km?</text>
+  </g>
+  <g font-size="14" font-weight="600" text-anchor="middle" fill="#8a3b12">
+    <text x="80" y="350">0.709</text><text x="160" y="350">0.710</text>
+    <text x="290" y="350">0.711</text><text x="370" y="350">0.712</text>
+    <text x="450" y="350">0.711</text><text x="530" y="350">0.713</text>
+    <text x="660" y="350">0.715</text><text x="740" y="350">0.720</text>
+  </g>
+  <text x="410" y="374" font-size="12" fill="#5b6b77" text-anchor="middle">leaves: mean ⁸⁷Sr/⁸⁶Sr of the training sites in each group</text>
+</svg>
+<figcaption style="font-size:0.9rem;color:#6c757d">A toy regression tree: young rocks near the coast end up with low, seawater-like ⁸⁷Sr/⁸⁶Sr; old rocks far inland with high, radiogenic values.</figcaption>
+</figure>
+<p><strong>How does the tree choose its questions?</strong> At each node, the algorithm tries every covariate and every possible threshold, and keeps the split that makes the two groups as homogeneous as possible (the largest drop in the variance of ⁸⁷Sr/⁸⁶Sr). It repeats this in each group until the groups are small.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Problems with a single tree
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li><strong>Overfitting:</strong> a deep tree ends up memorising the training sites, noise included.</li>
+<li><strong>Instability:</strong> add or remove a few sites and the whole tree can change.</li>
+<li><strong>Blocky predictions:</strong> a tree predicts one value per leaf, so a single-tree isoscape would be a patchwork of flat zones with sharp steps.</li>
+<li><strong>Greedy splits:</strong> each split is the best <em>now</em>, not necessarily the best for the whole tree.</li>
+</ul>
+</div>
+</div>
+</section>
+<section id="step-0.2-bagging-many-trees-on-resampled-data" class="level2">
+<h2 class="anchored" data-anchor-id="step-0.2-bagging-many-trees-on-resampled-data">Step 0.2: Bagging, many trees on resampled data</h2>
+<p><strong>Bagging</strong> (bootstrap aggregation) grows many trees, each on a different <strong>bootstrap sample</strong> of the sites: sites drawn at random <em>with replacement</em>, so each tree sees about two-thirds of them (some twice), and never sees the remaining third. The prediction is the <strong>average of all trees</strong>. Averaging cancels out much of the noise each tree has memorised.</p>
+</section>
+<section id="step-0.3-random-forest-adding-randomness-to-the-splits" class="level2">
+<h2 class="anchored" data-anchor-id="step-0.3-random-forest-adding-randomness-to-the-splits">Step 0.3: Random forest, adding randomness to the splits</h2>
+<p>A <strong>random forest</strong> is bagging plus one more trick: at each split, a tree may only choose among a <strong>random subset of the covariates</strong> (<code>mtry</code> of them). This stops every tree from starting with the same strong covariate, so the trees are more different from each other, and their average is more robust.</p>
+<figure style="margin:1.5rem 0" class="figure">
+<svg viewbox="0 0 820 330" role="img" aria-label="Random forest workflow: bootstrap samples, trees with random covariates at each split, out-of-bag sites, averaged prediction" style="width:100%;height:auto;font-family:'Source Sans 3',sans-serif">
+  <defs><marker id="ar2" viewbox="0 0 10 10" refx="9" refy="5" markerwidth="7" markerheight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#7a8a96"></path></marker></defs>
+  <rect x="300" y="10" width="220" height="44" rx="8" fill="#1f4e6b"></rect>
+  <text x="410" y="30" fill="#fff" font-size="14" text-anchor="middle">Training sites</text>
+  <text x="410" y="46" fill="#dbe6ee" font-size="12" text-anchor="middle">579 sites × covariates</text>
+  <g stroke="#7a8a96" stroke-width="1.6" fill="none" marker-end="url(#ar2)">
+    <path d="M410 54 L130 92"></path><path d="M410 54 L330 92"></path><path d="M410 54 L690 92"></path>
+    <path d="M130 136 L130 168"></path><path d="M330 136 L330 168"></path><path d="M690 136 L690 168"></path>
+    <path d="M130 238 L380 280"></path><path d="M330 238 L395 280"></path><path d="M690 238 L440 280"></path>
+  </g>
+  <g font-size="12" text-anchor="middle">
+    <rect x="60" y="92" width="95" height="44" rx="6" fill="#e8eef2" stroke="#1f4e6b"></rect><text x="107" y="110" fill="#1f4e6b">in-bag</text><text x="107" y="126" fill="#1f4e6b">~2/3</text>
+    <rect x="158" y="92" width="45" height="44" rx="6" fill="#fbeee6" stroke="#8a3b12"></rect><text x="180" y="110" fill="#8a3b12">OOB</text><text x="180" y="126" fill="#8a3b12">~1/3</text>
+    <rect x="260" y="92" width="95" height="44" rx="6" fill="#e8eef2" stroke="#1f4e6b"></rect><text x="307" y="110" fill="#1f4e6b">in-bag</text><text x="307" y="126" fill="#1f4e6b">~2/3</text>
+    <rect x="358" y="92" width="45" height="44" rx="6" fill="#fbeee6" stroke="#8a3b12"></rect><text x="380" y="110" fill="#8a3b12">OOB</text><text x="380" y="126" fill="#8a3b12">~1/3</text>
+    <rect x="620" y="92" width="95" height="44" rx="6" fill="#e8eef2" stroke="#1f4e6b"></rect><text x="667" y="110" fill="#1f4e6b">in-bag</text><text x="667" y="126" fill="#1f4e6b">~2/3</text>
+    <rect x="718" y="92" width="45" height="44" rx="6" fill="#fbeee6" stroke="#8a3b12"></rect><text x="740" y="110" fill="#8a3b12">OOB</text><text x="740" y="126" fill="#8a3b12">~1/3</text>
+    <text x="510" y="118" font-size="22" fill="#7a8a96">· · ·</text>
+  </g>
+  <g fill="#1f4e6b">
+    <g transform="translate(130,168)"><circle cx="0" cy="8" r="7"></circle><circle cx="-24" cy="36" r="6"></circle><circle cx="24" cy="36" r="6"></circle><circle cx="-36" cy="62" r="5"></circle><circle cx="-12" cy="62" r="5"></circle><circle cx="12" cy="62" r="5"></circle><circle cx="36" cy="62" r="5"></circle><path d="M0 8L-24 36M0 8L24 36M-24 36L-36 62M-24 36L-12 62M24 36L12 62M24 36L36 62" stroke="#1f4e6b"></path></g>
+    <g transform="translate(330,168)"><circle cx="0" cy="8" r="7"></circle><circle cx="-24" cy="36" r="6"></circle><circle cx="24" cy="36" r="6"></circle><circle cx="-12" cy="62" r="5"></circle><circle cx="12" cy="62" r="5"></circle><circle cx="36" cy="62" r="5"></circle><path d="M0 8L-24 36M0 8L24 36M24 36L12 62M24 36L36 62M-24 36L-12 62" stroke="#1f4e6b"></path></g>
+    <g transform="translate(690,168)"><circle cx="0" cy="8" r="7"></circle><circle cx="-24" cy="36" r="6"></circle><circle cx="24" cy="36" r="6"></circle><circle cx="-36" cy="62" r="5"></circle><circle cx="-12" cy="62" r="5"></circle><circle cx="24" cy="62" r="5"></circle><path d="M0 8L-24 36M0 8L24 36M-24 36L-36 62M-24 36L-12 62M24 36L24 62" stroke="#1f4e6b"></path></g>
+  </g>
+  <text x="510" y="210" font-size="22" fill="#7a8a96" text-anchor="middle">· · ·</text>
+  <text x="510" y="166" font-size="12" fill="#5b6b77" text-anchor="middle">each split: best of mtry random covariates</text>
+  <rect x="300" y="280" width="220" height="40" rx="8" fill="#8a3b12"></rect>
+  <text x="410" y="305" fill="#fff" font-size="14" text-anchor="middle">Prediction = average of all trees</text>
+</svg>
+<figcaption style="font-size:0.9rem;color:#6c757d">Each tree grows on its own bootstrap sample and picks among a random subset of covariates at every split. The sites a tree never saw (out-of-bag, OOB) are used to test it.</figcaption>
+</figure>
+<div class="callout callout-style-default callout-tip no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+💡 The out-of-bag (OOB) error
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Each site is left out of about a third of the trees. Predicting each site with only the trees that never saw it gives a free estimate of the error, the <strong>OOB error</strong>, without a separate test set. VSURF uses it to rank the covariates (<a href="./04-cross-validation.html#step-4.3-predictor-selection-with-vsurf">Step 4.3</a>). But the OOB sites are scattered among the training sites, so the OOB error behaves like a <strong>random</strong> cross-validation: it is optimistic for spatial data (<a href="./04-cross-validation.html#step-4.2-random-vs.-spatial-cross-validation">Step 4.2</a>).</p>
+</div>
+</div>
+</section>
+<section id="step-0.4-see-it-for-yourself" class="level2">
+<h2 class="anchored" data-anchor-id="step-0.4-see-it-for-yourself">Step 0.4: See it for yourself</h2>
+<p>A toy example: 120 sites where ⁸⁷Sr/⁸⁶Sr rises with distance from the coast (less sea-salt Sr) and jumps at 260 km where the bedrock changes. Move the sliders.</p>
+<div class="callout callout-style-simple callout-note">
+<div class="callout-body d-flex">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-body-container">
+<p>The sliders only work on this website, not in RStudio.</p>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb1" data-startfrom="153" data-source-offset="-0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 152;"><span id="cb1-153"><a href="#cb1-153" aria-hidden="true" tabindex="-1"></a>viewof ntree <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">1</span><span class="op">,</span> <span class="dv">200</span>]<span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">step</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Number of trees"</span>})</span>
+<span id="cb1-154"><a href="#cb1-154" aria-hidden="true" tabindex="-1"></a>viewof depth <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">1</span><span class="op">,</span> <span class="dv">10</span>]<span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> <span class="dv">8</span><span class="op">,</span> <span class="dt">step</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Maximum tree depth"</span>})</span>
+<span id="cb1-155"><a href="#cb1-155" aria-hidden="true" tabindex="-1"></a>viewof showTrees <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">toggle</span>({<span class="dt">label</span><span class="op">:</span> <span class="st">"Show the individual trees"</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="kw">true</span>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-1-1" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-1-2" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-1-3" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code hidden" id="cb2" data-startfrom="160" data-source-offset="-0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 159;"><span id="cb2-160"><a href="#cb2-160" aria-hidden="true" tabindex="-1"></a>rf <span class="op">=</span> {</span>
+<span id="cb2-161"><a href="#cb2-161" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> mulberry32 <span class="op">=</span> a <span class="kw">=&gt;</span> <span class="kw">function</span>(){a<span class="op">|=</span><span class="dv">0</span><span class="op">;</span>a<span class="op">=</span>a<span class="op">+</span><span class="bn">0x6D2B79F5</span><span class="op">|</span><span class="dv">0</span><span class="op">;</span><span class="kw">let</span> t<span class="op">=</span><span class="bu">Math</span><span class="op">.</span><span class="fu">imul</span>(a<span class="op">^</span>a<span class="op">&gt;&gt;&gt;</span><span class="dv">15</span><span class="op">,</span><span class="dv">1</span><span class="op">|</span>a)<span class="op">;</span>t<span class="op">=</span>t<span class="op">+</span><span class="bu">Math</span><span class="op">.</span><span class="fu">imul</span>(t<span class="op">^</span>t<span class="op">&gt;&gt;&gt;</span><span class="dv">7</span><span class="op">,</span><span class="dv">61</span><span class="op">|</span>t)<span class="op">^</span>t<span class="op">;</span><span class="cf">return</span>((t<span class="op">^</span>t<span class="op">&gt;&gt;&gt;</span><span class="dv">14</span>)<span class="op">&gt;&gt;&gt;</span><span class="dv">0</span>)<span class="op">/</span><span class="dv">4294967296</span>}</span>
+<span id="cb2-162"><a href="#cb2-162" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> gauss <span class="op">=</span> r <span class="kw">=&gt;</span> {<span class="kw">let</span> u<span class="op">=</span><span class="dv">0</span><span class="op">,</span>v<span class="op">=</span><span class="dv">0</span><span class="op">;</span><span class="cf">while</span>(u<span class="op">===</span><span class="dv">0</span>)u<span class="op">=</span><span class="fu">r</span>()<span class="op">;</span><span class="cf">while</span>(v<span class="op">===</span><span class="dv">0</span>)v<span class="op">=</span><span class="fu">r</span>()<span class="op">;</span><span class="cf">return</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(<span class="op">-</span><span class="dv">2</span><span class="op">*</span><span class="bu">Math</span><span class="op">.</span><span class="fu">log</span>(u))<span class="op">*</span><span class="bu">Math</span><span class="op">.</span><span class="fu">cos</span>(<span class="dv">2</span><span class="op">*</span><span class="bu">Math</span><span class="op">.</span><span class="cn">PI</span><span class="op">*</span>v)}</span>
+<span id="cb2-163"><a href="#cb2-163" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> truth <span class="op">=</span> x <span class="kw">=&gt;</span> <span class="fl">0.7092</span> <span class="op">+</span> <span class="fl">0.009</span><span class="op">*</span>(<span class="dv">1</span><span class="op">-</span><span class="bu">Math</span><span class="op">.</span><span class="fu">exp</span>(<span class="op">-</span>x<span class="op">/</span><span class="dv">60</span>)) <span class="op">+</span> (x<span class="op">&gt;</span><span class="dv">260</span> <span class="op">?</span> <span class="fl">0.006</span> <span class="op">:</span> <span class="dv">0</span>)</span>
+<span id="cb2-164"><a href="#cb2-164" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> r0 <span class="op">=</span> <span class="fu">mulberry32</span>(<span class="dv">42</span>)</span>
+<span id="cb2-165"><a href="#cb2-165" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> sites <span class="op">=</span> <span class="bu">Array</span><span class="op">.</span><span class="fu">from</span>({<span class="dt">length</span><span class="op">:</span><span class="dv">120</span>}<span class="op">,</span> () <span class="kw">=&gt;</span> { <span class="kw">const</span> x <span class="op">=</span> <span class="dv">10</span> <span class="op">+</span> <span class="fu">r0</span>()<span class="op">*</span><span class="dv">380</span><span class="op">;</span> <span class="cf">return</span> {x<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="fu">truth</span>(x) <span class="op">+</span> <span class="fl">0.0015</span><span class="op">*</span><span class="fu">gauss</span>(r0)} })</span>
+<span id="cb2-166"><a href="#cb2-166" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">buildTree</span>(pts<span class="op">,</span> d<span class="op">,</span> minLeaf){</span>
+<span id="cb2-167"><a href="#cb2-167" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> mean <span class="op">=</span> pts<span class="op">.</span><span class="fu">reduce</span>((s<span class="op">,</span>p)<span class="kw">=&gt;</span>s<span class="op">+</span>p<span class="op">.</span><span class="at">y</span><span class="op">,</span><span class="dv">0</span>)<span class="op">/</span>pts<span class="op">.</span><span class="at">length</span></span>
+<span id="cb2-168"><a href="#cb2-168" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (d<span class="op">===</span><span class="dv">0</span> <span class="op">||</span> pts<span class="op">.</span><span class="at">length</span> <span class="op">&lt;</span> <span class="dv">2</span><span class="op">*</span>minLeaf) <span class="cf">return</span> {<span class="dt">leaf</span><span class="op">:</span><span class="kw">true</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span>mean}</span>
+<span id="cb2-169"><a href="#cb2-169" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> s <span class="op">=</span> [<span class="op">...</span>pts]<span class="op">.</span><span class="fu">sort</span>((a<span class="op">,</span>b)<span class="kw">=&gt;</span>a<span class="op">.</span><span class="at">x</span><span class="op">-</span>b<span class="op">.</span><span class="at">x</span>)</span>
+<span id="cb2-170"><a href="#cb2-170" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> best<span class="op">=</span><span class="kw">null</span><span class="op">,</span> bestSSE<span class="op">=</span><span class="kw">Infinity</span><span class="op">,</span> sumL<span class="op">=</span><span class="dv">0</span><span class="op">,</span> sqL<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb2-171"><a href="#cb2-171" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> tot<span class="op">=</span>s<span class="op">.</span><span class="fu">reduce</span>((a<span class="op">,</span>p)<span class="kw">=&gt;</span>a<span class="op">+</span>p<span class="op">.</span><span class="at">y</span><span class="op">,</span><span class="dv">0</span>)<span class="op">,</span> totSq<span class="op">=</span>s<span class="op">.</span><span class="fu">reduce</span>((a<span class="op">,</span>p)<span class="kw">=&gt;</span>a<span class="op">+</span>p<span class="op">.</span><span class="at">y</span><span class="op">*</span>p<span class="op">.</span><span class="at">y</span><span class="op">,</span><span class="dv">0</span>)</span>
+<span id="cb2-172"><a href="#cb2-172" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> i<span class="op">=</span><span class="dv">0</span><span class="op">;</span>i<span class="op">&lt;</span>s<span class="op">.</span><span class="at">length</span><span class="op">-</span><span class="dv">1</span><span class="op">;</span>i<span class="op">++</span>){</span>
+<span id="cb2-173"><a href="#cb2-173" aria-hidden="true" tabindex="-1"></a>      sumL<span class="op">+=</span>s[i]<span class="op">.</span><span class="at">y</span><span class="op">;</span> sqL<span class="op">+=</span>s[i]<span class="op">.</span><span class="at">y</span><span class="op">*</span>s[i]<span class="op">.</span><span class="at">y</span></span>
+<span id="cb2-174"><a href="#cb2-174" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> nL<span class="op">=</span>i<span class="op">+</span><span class="dv">1</span><span class="op">,</span> nR<span class="op">=</span>s<span class="op">.</span><span class="at">length</span><span class="op">-</span>nL</span>
+<span id="cb2-175"><a href="#cb2-175" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (nL<span class="op">&lt;</span>minLeaf <span class="op">||</span> nR<span class="op">&lt;</span>minLeaf <span class="op">||</span> s[i]<span class="op">.</span><span class="at">x</span><span class="op">===</span>s[i<span class="op">+</span><span class="dv">1</span>]<span class="op">.</span><span class="at">x</span>) <span class="cf">continue</span></span>
+<span id="cb2-176"><a href="#cb2-176" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> sse<span class="op">=</span>(sqL<span class="op">-</span>sumL<span class="op">*</span>sumL<span class="op">/</span>nL)<span class="op">+</span>((totSq<span class="op">-</span>sqL)<span class="op">-</span>(tot<span class="op">-</span>sumL)<span class="op">**</span><span class="dv">2</span><span class="op">/</span>nR)</span>
+<span id="cb2-177"><a href="#cb2-177" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (sse<span class="op">&lt;</span>bestSSE){bestSSE<span class="op">=</span>sse<span class="op">;</span> best<span class="op">=</span>(s[i]<span class="op">.</span><span class="at">x</span><span class="op">+</span>s[i<span class="op">+</span><span class="dv">1</span>]<span class="op">.</span><span class="at">x</span>)<span class="op">/</span><span class="dv">2</span>}</span>
+<span id="cb2-178"><a href="#cb2-178" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-179"><a href="#cb2-179" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (best<span class="op">===</span><span class="kw">null</span>) <span class="cf">return</span> {<span class="dt">leaf</span><span class="op">:</span><span class="kw">true</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span>mean}</span>
+<span id="cb2-180"><a href="#cb2-180" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="dt">leaf</span><span class="op">:</span><span class="kw">false</span><span class="op">,</span> <span class="dt">t</span><span class="op">:</span>best<span class="op">,</span> <span class="dt">left</span><span class="op">:</span><span class="fu">buildTree</span>(s<span class="op">.</span><span class="fu">filter</span>(p<span class="kw">=&gt;</span>p<span class="op">.</span><span class="at">x</span><span class="op">&lt;=</span>best)<span class="op">,</span>d<span class="op">-</span><span class="dv">1</span><span class="op">,</span>minLeaf)<span class="op">,</span> <span class="dt">right</span><span class="op">:</span><span class="fu">buildTree</span>(s<span class="op">.</span><span class="fu">filter</span>(p<span class="kw">=&gt;</span>p<span class="op">.</span><span class="at">x</span><span class="op">&gt;</span>best)<span class="op">,</span>d<span class="op">-</span><span class="dv">1</span><span class="op">,</span>minLeaf)}</span>
+<span id="cb2-181"><a href="#cb2-181" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-182"><a href="#cb2-182" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">predict</span>(n<span class="op">,</span> x){ <span class="cf">return</span> n<span class="op">.</span><span class="at">leaf</span> <span class="op">?</span> n<span class="op">.</span><span class="at">value</span> <span class="op">:</span> <span class="fu">predict</span>(x<span class="op">&lt;=</span>n<span class="op">.</span><span class="at">t</span> <span class="op">?</span> n<span class="op">.</span><span class="at">left</span> <span class="op">:</span> n<span class="op">.</span><span class="at">right</span><span class="op">,</span> x) }</span>
+<span id="cb2-183"><a href="#cb2-183" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">grow</span>(ntree<span class="op">,</span> depth){</span>
+<span id="cb2-184"><a href="#cb2-184" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">Array</span><span class="op">.</span><span class="fu">from</span>({<span class="dt">length</span><span class="op">:</span>ntree}<span class="op">,</span> (_<span class="op">,</span>k) <span class="kw">=&gt;</span> { <span class="kw">const</span> r<span class="op">=</span><span class="fu">mulberry32</span>(<span class="dv">1000</span><span class="op">+</span>k)<span class="op">;</span> <span class="cf">return</span> <span class="fu">buildTree</span>(<span class="bu">Array</span><span class="op">.</span><span class="fu">from</span>({<span class="dt">length</span><span class="op">:</span>sites<span class="op">.</span><span class="at">length</span>}<span class="op">,</span> () <span class="kw">=&gt;</span> sites[<span class="bu">Math</span><span class="op">.</span><span class="fu">floor</span>(<span class="fu">r</span>()<span class="op">*</span>sites<span class="op">.</span><span class="at">length</span>)])<span class="op">,</span> depth<span class="op">,</span> <span class="dv">3</span>) })</span>
+<span id="cb2-185"><a href="#cb2-185" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-186"><a href="#cb2-186" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {sites<span class="op">,</span> truth<span class="op">,</span> predict<span class="op">,</span> grow}</span>
+<span id="cb2-187"><a href="#cb2-187" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-188"><a href="#cb2-188" aria-hidden="true" tabindex="-1"></a>grid <span class="op">=</span> <span class="bu">Array</span><span class="op">.</span><span class="fu">from</span>({<span class="dt">length</span><span class="op">:</span><span class="dv">201</span>}<span class="op">,</span> (_<span class="op">,</span>i)<span class="kw">=&gt;</span>i<span class="op">*</span><span class="dv">2</span>)</span>
+<span id="cb2-189"><a href="#cb2-189" aria-hidden="true" tabindex="-1"></a>trees <span class="op">=</span> rf<span class="op">.</span><span class="fu">grow</span>(ntree<span class="op">,</span> depth)</span>
+<span id="cb2-190"><a href="#cb2-190" aria-hidden="true" tabindex="-1"></a>forestLine <span class="op">=</span> grid<span class="op">.</span><span class="fu">map</span>(x <span class="kw">=&gt;</span> ({x<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> trees<span class="op">.</span><span class="fu">reduce</span>((s<span class="op">,</span>t)<span class="kw">=&gt;</span>s<span class="op">+</span>rf<span class="op">.</span><span class="fu">predict</span>(t<span class="op">,</span>x)<span class="op">,</span><span class="dv">0</span>)<span class="op">/</span>trees<span class="op">.</span><span class="at">length</span>}))</span>
+<span id="cb2-191"><a href="#cb2-191" aria-hidden="true" tabindex="-1"></a>treeLines <span class="op">=</span> showTrees <span class="op">?</span> trees<span class="op">.</span><span class="fu">slice</span>(<span class="dv">0</span><span class="op">,</span><span class="dv">30</span>)<span class="op">.</span><span class="fu">flatMap</span>((t<span class="op">,</span>k) <span class="kw">=&gt;</span> grid<span class="op">.</span><span class="fu">map</span>(x <span class="kw">=&gt;</span> ({x<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> rf<span class="op">.</span><span class="fu">predict</span>(t<span class="op">,</span>x)<span class="op">,</span> <span class="dt">tree</span><span class="op">:</span>k}))) <span class="op">:</span> []</span>
+<span id="cb2-192"><a href="#cb2-192" aria-hidden="true" tabindex="-1"></a>truthLine <span class="op">=</span> grid<span class="op">.</span><span class="fu">map</span>(x <span class="kw">=&gt;</span> ({x<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> rf<span class="op">.</span><span class="fu">truth</span>(x)}))</span>
+<span id="cb2-193"><a href="#cb2-193" aria-hidden="true" tabindex="-1"></a>rmse <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(grid<span class="op">.</span><span class="fu">reduce</span>((s<span class="op">,</span>x<span class="op">,</span>i)<span class="kw">=&gt;</span>s<span class="op">+</span>(forestLine[i]<span class="op">.</span><span class="at">y</span><span class="op">-</span>rf<span class="op">.</span><span class="fu">truth</span>(x))<span class="op">**</span><span class="dv">2</span><span class="op">,</span><span class="dv">0</span>)<span class="op">/</span>grid<span class="op">.</span><span class="at">length</span>)</span>
+<span id="cb2-194"><a href="#cb2-194" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-195"><a href="#cb2-195" aria-hidden="true" tabindex="-1"></a><span class="fu">md</span><span class="vs">`**</span><span class="sc">${</span>ntree <span class="op">===</span> <span class="dv">1</span> <span class="op">?</span> <span class="st">"One tree"</span> <span class="op">:</span> ntree <span class="op">+</span> <span class="st">" trees"</span><span class="sc">}</span><span class="vs">**, depth </span><span class="sc">${</span>depth<span class="sc">}</span><span class="vs"> · error against the true curve (RMSE) = **</span><span class="sc">${</span>rmse<span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">4</span>)<span class="sc">}</span><span class="vs">**`</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-2-1" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-2-2" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-2-3" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-2-4" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-2-5" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-2-6" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-2-7" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-2-8" data-nodetype="expression">
+
+</div>
+</div>
+</div>
+<div class="sourceCode cell-code hidden" id="cb3" data-startfrom="197" data-source-offset="-2258"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 196;"><span id="cb3-197"><a href="#cb3-197" aria-hidden="true" tabindex="-1"></a>Plot<span class="op">.</span><span class="fu">plot</span>({</span>
+<span id="cb3-198"><a href="#cb3-198" aria-hidden="true" tabindex="-1"></a>  <span class="dt">height</span><span class="op">:</span> <span class="dv">360</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">60</span><span class="op">,</span></span>
+<span id="cb3-199"><a href="#cb3-199" aria-hidden="true" tabindex="-1"></a>  <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"Distance to the coast (km)"</span><span class="op">,</span> <span class="dt">domain</span><span class="op">:</span> [<span class="dv">0</span><span class="op">,</span> <span class="dv">400</span>]}<span class="op">,</span></span>
+<span id="cb3-200"><a href="#cb3-200" aria-hidden="true" tabindex="-1"></a>  <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"⁸⁷Sr/⁸⁶Sr"</span><span class="op">,</span> <span class="dt">tickFormat</span><span class="op">:</span> d <span class="kw">=&gt;</span> d<span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">3</span>)<span class="op">,</span> <span class="dt">grid</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
+<span id="cb3-201"><a href="#cb3-201" aria-hidden="true" tabindex="-1"></a>  <span class="dt">marks</span><span class="op">:</span> [</span>
+<span id="cb3-202"><a href="#cb3-202" aria-hidden="true" tabindex="-1"></a>    Plot<span class="op">.</span><span class="fu">dot</span>(rf<span class="op">.</span><span class="at">sites</span><span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> <span class="st">"#9aa5ad"</span><span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="fl">2.5</span>})<span class="op">,</span></span>
+<span id="cb3-203"><a href="#cb3-203" aria-hidden="true" tabindex="-1"></a>    Plot<span class="op">.</span><span class="fu">line</span>(truthLine<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> <span class="st">"#333"</span><span class="op">,</span> <span class="dt">strokeDasharray</span><span class="op">:</span> <span class="st">"4,4"</span>})<span class="op">,</span></span>
+<span id="cb3-204"><a href="#cb3-204" aria-hidden="true" tabindex="-1"></a>    Plot<span class="op">.</span><span class="fu">line</span>(treeLines<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">z</span><span class="op">:</span> <span class="st">"tree"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> <span class="st">"#8a3b12"</span><span class="op">,</span> <span class="dt">strokeOpacity</span><span class="op">:</span> <span class="fl">0.25</span><span class="op">,</span> <span class="dt">curve</span><span class="op">:</span> <span class="st">"step"</span>})<span class="op">,</span></span>
+<span id="cb3-205"><a href="#cb3-205" aria-hidden="true" tabindex="-1"></a>    Plot<span class="op">.</span><span class="fu">line</span>(forestLine<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> <span class="st">"#1f4e6b"</span><span class="op">,</span> <span class="dt">strokeWidth</span><span class="op">:</span> <span class="fl">2.5</span><span class="op">,</span> <span class="dt">curve</span><span class="op">:</span> <span class="st">"step"</span>})</span>
+<span id="cb3-206"><a href="#cb3-206" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb3-207"><a href="#cb3-207" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<div id="ojs-cell-2-9" data-nodetype="expression">
+
+</div>
+</div>
+</div>
+</div>
+<p><span class="figure-note">Grey dots: training sites. Dashed: the true relationship. Thin orange: individual trees (up to 30 shown). Blue: the prediction (the average of all trees).</span></p>
+<div class="callout callout-style-default callout-tip no-icon callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon no-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+🧩 Your turn
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li>With <strong>1 tree</strong> and depth 8, how does the prediction look? Does it follow the noise or the true curve?</li>
+<li>Increase the number of trees to 50, then 200. What happens to the blue line and to the RMSE?</li>
+<li>With 200 trees, set the depth to 1, then 2, then 4. What goes wrong when the trees are too shallow?</li>
+</ol>
+</div>
+</div>
+<div class="callout callout-style-default callout-caution callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-7-contents" aria-controls="callout-7" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Things you might have noticed
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-7" class="callout-7-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li>One deep tree is a staircase that chases individual sites: it <strong>overfits</strong> the noise.</li>
+<li>Averaging many trees smooths the staircase and brings the prediction closer to the true curve: the RMSE drops. Beyond ~50 trees it barely changes, which is why a few hundred trees are enough.</li>
+<li>Very shallow trees can’t capture the shape (a depth-1 tree has only one step): the forest <strong>underfits</strong>. Random forests usually grow deep trees and let averaging remove the noise.</li>
+</ol>
+<p>Notice also the edges: beyond the last site (here near 0 and 390 km), the prediction is flat. <strong>A random forest cannot extrapolate</strong> beyond the range of its training data.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="step-0.5-from-a-forest-to-an-isoscape" class="level2">
+<h2 class="anchored" data-anchor-id="step-0.5-from-a-forest-to-an-isoscape">Step 0.5: From a forest to an isoscape</h2>
+<p>For an isoscape, each “site” is a training sample with its ⁸⁷Sr/⁸⁶Sr and the values of ~60 covariates under it. Once the forest is trained, we give it the covariates of every 1 km pixel and it predicts ⁸⁷Sr/⁸⁶Sr there.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/rf-workflow.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="The random forest isoscape workflow (Bataille et al.&nbsp;2020): overlay the sites on the covariates, build the regression matrix, select and train the model, then predict every pixel"><img src="images/rf-workflow.png" class="img-fluid figure-img" style="width:70.0%" alt="The random forest isoscape workflow (Bataille et al.&nbsp;2020): overlay the sites on the covariates, build the regression matrix, select and train the model, then predict every pixel"></a></p>
+<figcaption>The random forest isoscape workflow (Bataille et al.&nbsp;2020): overlay the sites on the covariates, build the regression matrix, select and train the model, then predict every pixel</figcaption>
+</figure>
+</div>
+<p><strong>And the uncertainty?</strong> Each tree gives its own prediction for a pixel. A <strong>quantile random forest</strong> keeps the whole spread of training values in the leaves, not just their mean, so we can read the 15.9% and 84.1% quantiles and turn them into a standard deviation. That is our uncertainty map (<a href="./06-isoscape.html">Section 6</a>).</p>
+</section>
+<section id="key-words-for-today" class="level2">
+<h2 class="anchored" data-anchor-id="key-words-for-today">Key words for today</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 30%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Term</th>
+<th>Meaning</th>
+<th>In the script</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Bootstrap sample</td>
+<td>Sites drawn at random with replacement; each tree gets its own</td>
+<td>done by <code>ranger</code></td>
+</tr>
+<tr class="even">
+<td>OOB error</td>
+<td>Error on the sites a tree never saw; behaves like random CV</td>
+<td>used by VSURF</td>
+</tr>
+<tr class="odd">
+<td><code>num.trees</code></td>
+<td>Number of trees in the forest</td>
+<td>500–1000</td>
+</tr>
+<tr class="even">
+<td><code>mtry</code></td>
+<td>Number of covariates a split can choose from</td>
+<td>tuned in Step 4.6</td>
+</tr>
+<tr class="odd">
+<td><code>min.node.size</code></td>
+<td>Minimum number of sites in a leaf</td>
+<td>tuned in Step 4.6</td>
+</tr>
+<tr class="even">
+<td>Variable importance</td>
+<td>How much the error grows when one covariate is shuffled</td>
+<td>Step 4.8</td>
+</tr>
+<tr class="odd">
+<td>Partial dependence</td>
+<td>Prediction as one covariate varies, others averaged</td>
+<td>Step 4.8</td>
+</tr>
+<tr class="even">
+<td>Quantile random forest</td>
+<td>Keeps the spread in each leaf, to map uncertainty</td>
+<td><code>quantreg = TRUE</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="summary" class="level2">
+<h2 class="anchored" data-anchor-id="summary">Summary</h2>
+<div class="callout callout-style-simple callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Key takeaways
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ul>
+<li>A regression tree splits the sites with yes/no questions on the covariates; each leaf predicts the mean ⁸⁷Sr/⁸⁶Sr of its sites.</li>
+<li>One tree overfits and is unstable. Bagging averages many trees grown on bootstrap samples; random forest also randomises the covariates at each split.</li>
+<li>The OOB error is a free error estimate, but it behaves like random cross-validation.</li>
+<li>Random forests cannot extrapolate beyond their training data.</li>
+</ul>
+</div>
+</div>
+</section>
+<section id="next-1.-training-data" class="level1">
+<h1><strong>Next:</strong> <a href="./01-training-data.html">1. Training data →</a></h1>
+
+
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3sibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoic2hpbnlJbnB1dCgnbnRyZWUnKSJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoic2hpbnlJbnB1dCgnZGVwdGgnKSJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoic2hpbnlJbnB1dCgnc2hvd1RyZWVzJykifV19
+</script>
+<script type="module">
+if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
+window._ojs.paths.runtimeToDoc = "../..";
+window._ojs.paths.runtimeToRoot = "../..";
+window._ojs.paths.docToRoot = "";
+window._ojs.selfContained = false;
+window._ojs.runtime.interpretFromScriptTags();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/cbataill\.github\.io\/Isoecol2026_Srworkshop_P2");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./index.html" class="pagination-link" aria-label="Welcome">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Welcome</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./01-training-data.html" class="pagination-link" aria-label="1. Training data">
+        <span class="nav-page-text">1. Training data</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>© 2026 Clement Bataille · CC BY 4.0</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Built with <a href="https://quarto.org">Quarto</a></p>
+</div>
+  </div>
+</footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

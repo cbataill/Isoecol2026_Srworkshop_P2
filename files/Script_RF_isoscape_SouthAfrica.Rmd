@@ -21,6 +21,7 @@ This version was prepared for the ISOECOL 2026 workshop (Hong Kong) and uses Sou
 
 Run this script chunk by chunk in RStudio (open `Module2_isoscape.Rproj` first) and follow the website in your browser at the same time: https://cbataill.github.io/Isoecol2026_Srworkshop_P2/
 
+- Start with page 0 of the website, [How random forest works](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/00-random-forest.html): it has no code to run.
 - 📖 lines tell you which page of the website matches the section you are in.
 - 🛑 lines are **Think · Pair · Share** breaks: stop running code and go to the website for the discussion questions.
 

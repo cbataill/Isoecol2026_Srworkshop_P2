@@ -1,0 +1,262 @@
+---
+title: "0. How random forest works"
+subtitle: "From one decision tree to a forest, and to an isoscape"
+description: "The ideas behind the model we build today"
+date-modified: last-modified
+---
+
+::: {.callout-note appearance="simple" icon="false"}
+## In this section
+
+-   **You'll learn:** how a regression tree splits the data, why one tree is not enough, and how bagging and random forest fix it
+-   **You'll need:** nothing to run: this page has no code for RStudio
+-   **Time:** about 15 minutes
+:::
+
+## Overview
+
+In the talk, we saw that bioavailable ⁸⁷Sr/⁸⁶Sr varies at many scales: continental terranes, regional bedrock, atmospheric gradients (dust, sea salt) and local sedimentary features. No single map captures all of them. A **random forest** learns how ⁸⁷Sr/⁸⁶Sr relates to many maps at once (geology, climate, soils, atmospheric deposition…), and then predicts it everywhere.
+
+::: {layout-ncol="2"}
+::: {.callout-tip icon="false"}
+## ✅ Why random forest for Sr?
+
+-   Combines many geospatial layers seamlessly
+-   Captures non-linear relationships and interactions
+-   Can map multiscale patterns of bioavailable ⁸⁷Sr/⁸⁶Sr
+-   More accurate than interpolation or domain mapping
+:::
+
+::: {.callout-warning icon="false"}
+## ⚠️ Challenges
+
+-   Needs a lot of training data
+-   More computing than simpler methods
+-   Harder to interpret: we need tools to look inside
+-   Its uncertainty maps have limitations
+:::
+:::
+
+## Step 0.1: A decision tree for regression
+
+A regression tree asks a series of yes/no questions about the covariates, and each answer sends a site down one branch. At the end of a branch (a **leaf**), the prediction is the **mean ⁸⁷Sr/⁸⁶Sr of the training sites that ended up there**.
+
+```{=html}
+<figure style="margin:1.5rem 0">
+<svg viewBox="0 0 820 380" role="img" aria-label="Example regression tree splitting sites by geological age and distance to the coast" style="width:100%;height:auto;font-family:'Source Sans 3',sans-serif">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#7a8a96"/></marker></defs>
+  <g stroke="#7a8a96" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+    <path d="M410 62 L225 128"/><path d="M410 62 L595 128"/>
+    <path d="M225 168 L120 238"/><path d="M225 168 L330 238"/>
+    <path d="M595 168 L490 238"/><path d="M595 168 L700 238"/>
+    <path d="M120 278 L80 330"/><path d="M120 278 L160 330"/>
+    <path d="M330 278 L290 330"/><path d="M330 278 L370 330"/>
+    <path d="M490 278 L450 330"/><path d="M490 278 L530 330"/>
+    <path d="M700 278 L660 330"/><path d="M700 278 L740 330"/>
+  </g>
+  <g font-size="12" fill="#5b6b77" text-anchor="middle">
+    <text x="300" y="88">yes</text><text x="520" y="88">no</text>
+    <text x="158" y="198">yes</text><text x="292" y="198">no</text>
+    <text x="528" y="198">yes</text><text x="662" y="198">no</text>
+  </g>
+  <g font-size="14" text-anchor="middle">
+    <rect x="320" y="22" width="180" height="40" rx="8" fill="#1f4e6b"/><text x="410" y="47" fill="#fff">Age &lt; 100 Myr?</text>
+    <rect x="140" y="128" width="170" height="40" rx="8" fill="#e8eef2" stroke="#1f4e6b"/><text x="225" y="153" fill="#1f4e6b">Coast &lt; 10 km?</text>
+    <rect x="510" y="128" width="170" height="40" rx="8" fill="#e8eef2" stroke="#1f4e6b"/><text x="595" y="153" fill="#1f4e6b">Coast &lt; 50 km?</text>
+    <rect x="45" y="238" width="150" height="40" rx="8" fill="#e8eef2" stroke="#1f4e6b"/><text x="120" y="263" fill="#1f4e6b">Age &lt; 10 Myr?</text>
+    <rect x="250" y="238" width="160" height="40" rx="8" fill="#e8eef2" stroke="#1f4e6b"/><text x="330" y="263" fill="#1f4e6b">Coast &lt; 100 km?</text>
+    <rect x="415" y="238" width="150" height="40" rx="8" fill="#e8eef2" stroke="#1f4e6b"/><text x="490" y="263" fill="#1f4e6b">Age &lt; 300 Myr?</text>
+    <rect x="625" y="238" width="150" height="40" rx="8" fill="#e8eef2" stroke="#1f4e6b"/><text x="700" y="263" fill="#1f4e6b">Coast &lt; 70 km?</text>
+  </g>
+  <g font-size="14" font-weight="600" text-anchor="middle" fill="#8a3b12">
+    <text x="80" y="350">0.709</text><text x="160" y="350">0.710</text>
+    <text x="290" y="350">0.711</text><text x="370" y="350">0.712</text>
+    <text x="450" y="350">0.711</text><text x="530" y="350">0.713</text>
+    <text x="660" y="350">0.715</text><text x="740" y="350">0.720</text>
+  </g>
+  <text x="410" y="374" font-size="12" fill="#5b6b77" text-anchor="middle">leaves: mean ⁸⁷Sr/⁸⁶Sr of the training sites in each group</text>
+</svg>
+<figcaption style="font-size:0.9rem;color:#6c757d">A toy regression tree: young rocks near the coast end up with low, seawater-like ⁸⁷Sr/⁸⁶Sr; old rocks far inland with high, radiogenic values.</figcaption>
+</figure>
+```
+
+**How does the tree choose its questions?** At each node, the algorithm tries every covariate and every possible threshold, and keeps the split that makes the two groups as homogeneous as possible (the largest drop in the variance of ⁸⁷Sr/⁸⁶Sr). It repeats this in each group until the groups are small.
+
+::: callout-warning
+## Problems with a single tree
+
+-   **Overfitting:** a deep tree ends up memorising the training sites, noise included.
+-   **Instability:** add or remove a few sites and the whole tree can change.
+-   **Blocky predictions:** a tree predicts one value per leaf, so a single-tree isoscape would be a patchwork of flat zones with sharp steps.
+-   **Greedy splits:** each split is the best *now*, not necessarily the best for the whole tree.
+:::
+
+## Step 0.2: Bagging, many trees on resampled data
+
+**Bagging** (bootstrap aggregation) grows many trees, each on a different **bootstrap sample** of the sites: sites drawn at random *with replacement*, so each tree sees about two-thirds of them (some twice), and never sees the remaining third. The prediction is the **average of all trees**. Averaging cancels out much of the noise each tree has memorised.
+
+## Step 0.3: Random forest, adding randomness to the splits
+
+A **random forest** is bagging plus one more trick: at each split, a tree may only choose among a **random subset of the covariates** (`mtry` of them). This stops every tree from starting with the same strong covariate, so the trees are more different from each other, and their average is more robust.
+
+```{=html}
+<figure style="margin:1.5rem 0">
+<svg viewBox="0 0 820 330" role="img" aria-label="Random forest workflow: bootstrap samples, trees with random covariates at each split, out-of-bag sites, averaged prediction" style="width:100%;height:auto;font-family:'Source Sans 3',sans-serif">
+  <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="#7a8a96"/></marker></defs>
+  <rect x="300" y="10" width="220" height="44" rx="8" fill="#1f4e6b"/>
+  <text x="410" y="30" fill="#fff" font-size="14" text-anchor="middle">Training sites</text>
+  <text x="410" y="46" fill="#dbe6ee" font-size="12" text-anchor="middle">579 sites × covariates</text>
+  <g stroke="#7a8a96" stroke-width="1.6" fill="none" marker-end="url(#ar2)">
+    <path d="M410 54 L130 92"/><path d="M410 54 L330 92"/><path d="M410 54 L690 92"/>
+    <path d="M130 136 L130 168"/><path d="M330 136 L330 168"/><path d="M690 136 L690 168"/>
+    <path d="M130 238 L380 280"/><path d="M330 238 L395 280"/><path d="M690 238 L440 280"/>
+  </g>
+  <g font-size="12" text-anchor="middle">
+    <rect x="60" y="92" width="95" height="44" rx="6" fill="#e8eef2" stroke="#1f4e6b"/><text x="107" y="110" fill="#1f4e6b">in-bag</text><text x="107" y="126" fill="#1f4e6b">~2/3</text>
+    <rect x="158" y="92" width="45" height="44" rx="6" fill="#fbeee6" stroke="#8a3b12"/><text x="180" y="110" fill="#8a3b12">OOB</text><text x="180" y="126" fill="#8a3b12">~1/3</text>
+    <rect x="260" y="92" width="95" height="44" rx="6" fill="#e8eef2" stroke="#1f4e6b"/><text x="307" y="110" fill="#1f4e6b">in-bag</text><text x="307" y="126" fill="#1f4e6b">~2/3</text>
+    <rect x="358" y="92" width="45" height="44" rx="6" fill="#fbeee6" stroke="#8a3b12"/><text x="380" y="110" fill="#8a3b12">OOB</text><text x="380" y="126" fill="#8a3b12">~1/3</text>
+    <rect x="620" y="92" width="95" height="44" rx="6" fill="#e8eef2" stroke="#1f4e6b"/><text x="667" y="110" fill="#1f4e6b">in-bag</text><text x="667" y="126" fill="#1f4e6b">~2/3</text>
+    <rect x="718" y="92" width="45" height="44" rx="6" fill="#fbeee6" stroke="#8a3b12"/><text x="740" y="110" fill="#8a3b12">OOB</text><text x="740" y="126" fill="#8a3b12">~1/3</text>
+    <text x="510" y="118" font-size="22" fill="#7a8a96">· · ·</text>
+  </g>
+  <g fill="#1f4e6b">
+    <g transform="translate(130,168)"><circle cx="0" cy="8" r="7"/><circle cx="-24" cy="36" r="6"/><circle cx="24" cy="36" r="6"/><circle cx="-36" cy="62" r="5"/><circle cx="-12" cy="62" r="5"/><circle cx="12" cy="62" r="5"/><circle cx="36" cy="62" r="5"/><path d="M0 8L-24 36M0 8L24 36M-24 36L-36 62M-24 36L-12 62M24 36L12 62M24 36L36 62" stroke="#1f4e6b"/></g>
+    <g transform="translate(330,168)"><circle cx="0" cy="8" r="7"/><circle cx="-24" cy="36" r="6"/><circle cx="24" cy="36" r="6"/><circle cx="-12" cy="62" r="5"/><circle cx="12" cy="62" r="5"/><circle cx="36" cy="62" r="5"/><path d="M0 8L-24 36M0 8L24 36M24 36L12 62M24 36L36 62M-24 36L-12 62" stroke="#1f4e6b"/></g>
+    <g transform="translate(690,168)"><circle cx="0" cy="8" r="7"/><circle cx="-24" cy="36" r="6"/><circle cx="24" cy="36" r="6"/><circle cx="-36" cy="62" r="5"/><circle cx="-12" cy="62" r="5"/><circle cx="24" cy="62" r="5"/><path d="M0 8L-24 36M0 8L24 36M-24 36L-36 62M-24 36L-12 62M24 36L24 62" stroke="#1f4e6b"/></g>
+  </g>
+  <text x="510" y="210" font-size="22" fill="#7a8a96" text-anchor="middle">· · ·</text>
+  <text x="510" y="166" font-size="12" fill="#5b6b77" text-anchor="middle">each split: best of mtry random covariates</text>
+  <rect x="300" y="280" width="220" height="40" rx="8" fill="#8a3b12"/>
+  <text x="410" y="305" fill="#fff" font-size="14" text-anchor="middle">Prediction = average of all trees</text>
+</svg>
+<figcaption style="font-size:0.9rem;color:#6c757d">Each tree grows on its own bootstrap sample and picks among a random subset of covariates at every split. The sites a tree never saw (out-of-bag, OOB) are used to test it.</figcaption>
+</figure>
+```
+
+::: {.callout-tip icon="false"}
+## 💡 The out-of-bag (OOB) error
+
+Each site is left out of about a third of the trees. Predicting each site with only the trees that never saw it gives a free estimate of the error, the **OOB error**, without a separate test set. VSURF uses it to rank the covariates ([Step 4.3](04-cross-validation.qmd#step-4.3-predictor-selection-with-vsurf)). But the OOB sites are scattered among the training sites, so the OOB error behaves like a **random** cross-validation: it is optimistic for spatial data ([Step 4.2](04-cross-validation.qmd#step-4.2-random-vs.-spatial-cross-validation)).
+:::
+
+## Step 0.4: See it for yourself
+
+A toy example: 120 sites where ⁸⁷Sr/⁸⁶Sr rises with distance from the coast (less sea-salt Sr) and jumps at 260 km where the bedrock changes. Move the sliders.
+
+::: {.callout-note appearance="simple"}
+The sliders only work on this website, not in RStudio.
+:::
+
+```{ojs}
+//| echo: false
+viewof ntree = Inputs.range([1, 200], {value: 1, step: 1, label: "Number of trees"})
+viewof depth = Inputs.range([1, 10], {value: 8, step: 1, label: "Maximum tree depth"})
+viewof showTrees = Inputs.toggle({label: "Show the individual trees", value: true})
+```
+
+```{ojs}
+//| echo: false
+rf = {
+  const mulberry32 = a => function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}
+  const gauss = r => {let u=0,v=0;while(u===0)u=r();while(v===0)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+  const truth = x => 0.7092 + 0.009*(1-Math.exp(-x/60)) + (x>260 ? 0.006 : 0)
+  const r0 = mulberry32(42)
+  const sites = Array.from({length:120}, () => { const x = 10 + r0()*380; return {x, y: truth(x) + 0.0015*gauss(r0)} })
+  function buildTree(pts, d, minLeaf){
+    const mean = pts.reduce((s,p)=>s+p.y,0)/pts.length
+    if (d===0 || pts.length < 2*minLeaf) return {leaf:true, value:mean}
+    const s = [...pts].sort((a,b)=>a.x-b.x)
+    let best=null, bestSSE=Infinity, sumL=0, sqL=0
+    const tot=s.reduce((a,p)=>a+p.y,0), totSq=s.reduce((a,p)=>a+p.y*p.y,0)
+    for (let i=0;i<s.length-1;i++){
+      sumL+=s[i].y; sqL+=s[i].y*s[i].y
+      const nL=i+1, nR=s.length-nL
+      if (nL<minLeaf || nR<minLeaf || s[i].x===s[i+1].x) continue
+      const sse=(sqL-sumL*sumL/nL)+((totSq-sqL)-(tot-sumL)**2/nR)
+      if (sse<bestSSE){bestSSE=sse; best=(s[i].x+s[i+1].x)/2}
+    }
+    if (best===null) return {leaf:true, value:mean}
+    return {leaf:false, t:best, left:buildTree(s.filter(p=>p.x<=best),d-1,minLeaf), right:buildTree(s.filter(p=>p.x>best),d-1,minLeaf)}
+  }
+  function predict(n, x){ return n.leaf ? n.value : predict(x<=n.t ? n.left : n.right, x) }
+  function grow(ntree, depth){
+    return Array.from({length:ntree}, (_,k) => { const r=mulberry32(1000+k); return buildTree(Array.from({length:sites.length}, () => sites[Math.floor(r()*sites.length)]), depth, 3) })
+  }
+  return {sites, truth, predict, grow}
+}
+grid = Array.from({length:201}, (_,i)=>i*2)
+trees = rf.grow(ntree, depth)
+forestLine = grid.map(x => ({x, y: trees.reduce((s,t)=>s+rf.predict(t,x),0)/trees.length}))
+treeLines = showTrees ? trees.slice(0,30).flatMap((t,k) => grid.map(x => ({x, y: rf.predict(t,x), tree:k}))) : []
+truthLine = grid.map(x => ({x, y: rf.truth(x)}))
+rmse = Math.sqrt(grid.reduce((s,x,i)=>s+(forestLine[i].y-rf.truth(x))**2,0)/grid.length)
+
+md`**${ntree === 1 ? "One tree" : ntree + " trees"}**, depth ${depth} · error against the true curve (RMSE) = **${rmse.toFixed(4)}**`
+
+Plot.plot({
+  height: 360, marginLeft: 60,
+  x: {label: "Distance to the coast (km)", domain: [0, 400]},
+  y: {label: "⁸⁷Sr/⁸⁶Sr", tickFormat: d => d.toFixed(3), grid: true},
+  marks: [
+    Plot.dot(rf.sites, {x: "x", y: "y", fill: "#9aa5ad", r: 2.5}),
+    Plot.line(truthLine, {x: "x", y: "y", stroke: "#333", strokeDasharray: "4,4"}),
+    Plot.line(treeLines, {x: "x", y: "y", z: "tree", stroke: "#8a3b12", strokeOpacity: 0.25, curve: "step"}),
+    Plot.line(forestLine, {x: "x", y: "y", stroke: "#1f4e6b", strokeWidth: 2.5, curve: "step"})
+  ]
+})
+```
+
+<span class="figure-note">Grey dots: training sites. Dashed: the true relationship. Thin orange: individual trees (up to 30 shown). Blue: the prediction (the average of all trees).</span>
+
+::: {.callout-tip icon="false"}
+## 🧩 Your turn
+
+1.  With **1 tree** and depth 8, how does the prediction look? Does it follow the noise or the true curve?
+2.  Increase the number of trees to 50, then 200. What happens to the blue line and to the RMSE?
+3.  With 200 trees, set the depth to 1, then 2, then 4. What goes wrong when the trees are too shallow?
+:::
+
+::: {.callout-caution collapse="true"}
+## Things you might have noticed
+
+1.  One deep tree is a staircase that chases individual sites: it **overfits** the noise.
+2.  Averaging many trees smooths the staircase and brings the prediction closer to the true curve: the RMSE drops. Beyond ~50 trees it barely changes, which is why a few hundred trees are enough.
+3.  Very shallow trees can't capture the shape (a depth-1 tree has only one step): the forest **underfits**. Random forests usually grow deep trees and let averaging remove the noise.
+
+Notice also the edges: beyond the last site (here near 0 and 390 km), the prediction is flat. **A random forest cannot extrapolate** beyond the range of its training data.
+:::
+
+## Step 0.5: From a forest to an isoscape
+
+For an isoscape, each "site" is a training sample with its ⁸⁷Sr/⁸⁶Sr and the values of ~60 covariates under it. Once the forest is trained, we give it the covariates of every 1 km pixel and it predicts ⁸⁷Sr/⁸⁶Sr there.
+
+![The random forest isoscape workflow (Bataille et al. 2020): overlay the sites on the covariates, build the regression matrix, select and train the model, then predict every pixel](images/rf-workflow.png){width="70%"}
+
+**And the uncertainty?** Each tree gives its own prediction for a pixel. A **quantile random forest** keeps the whole spread of training values in the leaves, not just their mean, so we can read the 15.9% and 84.1% quantiles and turn them into a standard deviation. That is our uncertainty map ([Section 6](06-isoscape.qmd)).
+
+## Key words for today
+
+| Term | Meaning | In the script |
+|------|---------|---------------|
+| Bootstrap sample | Sites drawn at random with replacement; each tree gets its own | done by `ranger` |
+| OOB error | Error on the sites a tree never saw; behaves like random CV | used by VSURF |
+| `num.trees` | Number of trees in the forest | 500–1000 |
+| `mtry` | Number of covariates a split can choose from | tuned in Step 4.6 |
+| `min.node.size` | Minimum number of sites in a leaf | tuned in Step 4.6 |
+| Variable importance | How much the error grows when one covariate is shuffled | Step 4.8 |
+| Partial dependence | Prediction as one covariate varies, others averaged | Step 4.8 |
+| Quantile random forest | Keeps the spread in each leaf, to map uncertainty | `quantreg = TRUE` |
+
+## Summary
+
+::: {.callout-note appearance="simple"}
+## Key takeaways
+
+-   A regression tree splits the sites with yes/no questions on the covariates; each leaf predicts the mean ⁸⁷Sr/⁸⁶Sr of its sites.
+-   One tree overfits and is unstable. Bagging averages many trees grown on bootstrap samples; random forest also randomises the covariates at each split.
+-   The OOB error is a free error estimate, but it behaves like random cross-validation.
+-   Random forests cannot extrapolate beyond their training data.
+:::
+
+# **Next:** [1. Training data →](01-training-data.qmd)

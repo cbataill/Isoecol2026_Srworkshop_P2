@@ -66,7 +66,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<link href="./01-training-data.html" rel="next">
+<link href="./00-random-forest.html" rel="next">
 <script src="site_libs/quarto-html/quarto.js"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
@@ -194,6 +194,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./00-random-forest.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">0. How random forest works</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./01-training-data.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">1. Training data</span></a>
   </div>
@@ -257,7 +263,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#more-resources" id="toc-more-resources" class="nav-link" data-scroll-target="#more-resources">More resources</a></li>
   <li><a href="#getting-help" id="toc-getting-help" class="nav-link" data-scroll-target="#getting-help">Getting help</a></li>
-  <li><a href="#start-1.-training-data" id="toc-start-1.-training-data" class="nav-link" data-scroll-target="#start-1.-training-data"><strong>Start:</strong> 1. Training data →</a></li>
+  <li><a href="#start-0.-how-random-forest-works" id="toc-start-0.-how-random-forest-works" class="nav-link" data-scroll-target="#start-0.-how-random-forest-works"><strong>Start:</strong> 0. How random forest works →</a></li>
   </ul>
 </nav>
     </div>
@@ -325,6 +331,7 @@ How to use this site
 <h2 class="anchored" data-anchor-id="what-youll-learn">What you’ll learn</h2>
 <p>By the end of this module you will be able to:</p>
 <ul>
+<li>Explain how a random forest builds a prediction from many decision trees</li>
 <li>Build a regression matrix from bioavailable ⁸⁷Sr/⁸⁶Sr data and geospatial covariates</li>
 <li>Choose covariates using process knowledge, and deal with correlated covariates</li>
 <li>Select predictors and evaluate a random forest model with random and spatial cross-validation</li>
@@ -348,7 +355,7 @@ How to use this site
 </tr>
 <tr class="even">
 <td>11:15 – 12:30</td>
-<td><a href="./01-training-data.html">1. Training data</a> · <a href="./02-covariates.html">2. Covariates</a> · <a href="./03-regression-matrix.html">3. Regression matrix</a></td>
+<td><a href="./00-random-forest.html">0. How random forest works</a> · <a href="./01-training-data.html">1. Training data</a> · <a href="./02-covariates.html">2. Covariates</a> · <a href="./03-regression-matrix.html">3. Regression matrix</a></td>
 </tr>
 <tr class="odd">
 <td>12:30 – 13:30</td>
@@ -505,8 +512,8 @@ Running the code
 <h2 class="anchored" data-anchor-id="getting-help">Getting help</h2>
 <p>During the workshop, put up your hand or ask Clement, Megan, or Chris for help. Code that does not run? Compare with your neighbour first, then ask. Afterwards, contact Clement Bataille (Purdue University).</p>
 </section>
-<section id="start-1.-training-data" class="level1">
-<h1><strong>Start:</strong> <a href="./01-training-data.html">1. Training data →</a></h1>
+<section id="start-0.-how-random-forest-works" class="level1">
+<h1><strong>Start:</strong> <a href="./00-random-forest.html">0. How random forest works →</a></h1>
 
 
 </section>
@@ -933,8 +940,8 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
   <div class="nav-page nav-page-previous">
   </div>
   <div class="nav-page nav-page-next">
-      <a href="./01-training-data.html" class="pagination-link" aria-label="1. Training data">
-        <span class="nav-page-text">1. Training data</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="./00-random-forest.html" class="pagination-link" aria-label="0. How random forest works">
+        <span class="nav-page-text">0. How random forest works</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

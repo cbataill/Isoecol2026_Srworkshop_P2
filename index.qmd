@@ -26,6 +26,7 @@ Throughout the pages you'll find **Think · Pair · Share** breaks, marked with 
 
 By the end of this module you will be able to:
 
+-   Explain how a random forest builds a prediction from many decision trees
 -   Build a regression matrix from bioavailable ⁸⁷Sr/⁸⁶Sr data and geospatial covariates
 -   Choose covariates using process knowledge, and deal with correlated covariates
 -   Select predictors and evaluate a random forest model with random and spatial cross-validation
@@ -37,7 +38,7 @@ By the end of this module you will be able to:
 | Time          | Section                                                                      |
 |---------------|------------------------------------------------------------------------------|
 | In advance    | [Before the workshop](#before-the-workshop)                                  |
-| 11:15 – 12:30 | [1. Training data](01-training-data.qmd) · [2. Covariates](02-covariates.qmd) · [3. Regression matrix](03-regression-matrix.qmd) |
+| 11:15 – 12:30 | [0. How random forest works](00-random-forest.qmd) · [1. Training data](01-training-data.qmd) · [2. Covariates](02-covariates.qmd) · [3. Regression matrix](03-regression-matrix.qmd) |
 | 12:30 – 13:30 | Lunch (VSURF and the model run while we eat)                                 |
 | 13:30 – 14:30 | [4. Cross-validation](04-cross-validation.qmd) · [5. Interpretation](05-interpretation.qmd) · [6. Isoscape](06-isoscape.qmd) |
 | After the workshop | [Extra: applying this to your own study area](02b-own-study-area.qmd) |
@@ -153,4 +154,4 @@ The figures on this site come from a pre-computed run of the script. Your result
 
 During the workshop, put up your hand or ask Clement, Megan, or Chris for help. Code that does not run? Compare with your neighbour first, then ask. Afterwards, contact Clement Bataille (Purdue University).
 
-# **Start:** [1. Training data →](01-training-data.qmd)
+# **Start:** [0. How random forest works →](00-random-forest.qmd)

@@ -1242,3 +1242,62 @@ plot(st_geometry(za_p), add = TRUE, border = "grey30", lwd = 0.5)
 4. **Spatial folds**: change the number of spatial clusters (`centers = 10` in Step 4.2) to 5 or 20. How do the distance distributions (Fig. S5) and the spatial R2 change?
 5. **Uncertainty**: where is the uncertainty highest? Is it where there are no data, where the geology is complex, or both?
 6. **Assignment**: use `Output/rf_all_pred.tif` and `Output/rf_all_sd.tif` as the isoscape and its uncertainty in a Bayesian assignment (e.g. `assignR::pdRaster`).
+
+## EXTRA: applying this workflow to your own study area (NOT RUN)
+
+> 📖 **Website, extra page: [Your own study area](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/02b-own-study-area.html).** It explains each step below in detail.
+
+**This section is not run during the workshop.** Clipping the global rasters takes a long time and needs the large global files from OSF (https://osf.io/a2r7g/), so all the code below is commented out (every line starts with `#`). It is here to help you build an isoscape for your own region after the workshop.
+
+To use it: download the global rasters into a `Global_rasters/` folder, select the lines of a chunk and press **Ctrl+Shift+C** (Cmd+Shift+C on a Mac) to uncomment them, then edit the study area.
+
+### Clip the global rasters to your study area
+
+```{r eval=FALSE}
+# library(terra)
+# library(sf)
+# library(rnaturalearth)
+#
+# eck4 <- "+proj=eck4 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=m +no_defs"
+#
+# global_dir <- "Global_rasters"                  # folder with the global OSF rasters
+# out_dir    <- "Project_Raster/clipped_myarea"   # where the clipped rasters will go
+# dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+#
+# # Study area: here one or more countries from Natural Earth...
+# area <- ne_countries(country = c("Kenya", "Tanzania"), scale = "medium", returnclass = "sf")
+# # ...or your own polygon: area <- st_read("my_study_area.shp")
+#
+# area <- area |>
+#   st_transform(eck4) |>
+#   st_union() |>
+#   st_buffer(50000)   # 50 km buffer: keeps the 25 km neighbourhood means complete at the edges
+# area_v <- vect(area)
+#
+# # Crop and mask every global raster to the study area
+# for (f in list.files(global_dir, pattern = "\\.tif$", full.names = TRUE)) {
+#   r <- rast(f)
+#   r <- crop(r, project(area_v, crs(r)), mask = TRUE)
+#   writeRaster(r, file.path(out_dir, basename(f)), overwrite = TRUE)
+# }
+# list.files(out_dir)
+```
+
+### Point the script to your rasters and adjust the covariates
+
+```{r eval=FALSE}
+# # In the setup chunk, point the script to your clipped rasters
+# # (and delete Project_Raster/neighbourhood/ so Step 2.8 is recomputed for your area)
+# raster_dir <- "Project_Raster/clipped_myarea"
+#
+# # In place of Steps 2.2 to 2.7: load every raster in the folder at once
+# files <- list.files(raster_dir, pattern = "\\.tif$", full.names = TRUE)
+# for (f in files) assign(sub("\\.tif$", "", basename(f)), rast(f))
+#
+# # Run Step 2.8 as usual, then in Step 2.9 replace predictor_names with:
+# predictor_names <- c(sub("\\.tif$", "", basename(files)), focal_names)
+# # ...and edit the two lines of Step 2.9 that name South African layers
+# # (r.geomap / r.vegmap and r.africa.Ca.0) if those layers are not in your folder
+```
+
+Then use your own screened bioavailable 87Sr/86Sr data (ARDUOUS format) instead of `Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv`, and run the rest of the script as usual.

@@ -49,7 +49,8 @@ By the end of this module you will be able to:
 1.  Install a recent version of [R](https://cran.r-project.org/).
 2.  Install [RStudio Desktop](https://posit.co/download/rstudio-desktop/).
 3.  Run the code below in the RStudio console to install the packages we'll use.
-4.  Download the workshop data (below). The rasters are ~350 MB, so please don't wait for the conference Wi-Fi!
+4.  **Download and unzip the workshop data and script** ([below](#get-the-data-and-the-script)). It is ~400 MB, so please do this at home: don't wait for the conference Wi-Fi!
+5.  Open the project in RStudio and run the check at the end of this page ([below](#set-your-working-directory)).
 :::
 
 ```{r}
@@ -60,29 +61,77 @@ install.packages(c("terra", "sf", "rnaturalearth", "rnaturalearthdata", "caret",
 
 ### Get the data and the script
 
--   **Data and script:** everything is in the [`Module2_isoscape` folder](https://github.com/cbataill/Isoecol2026_Srworkshop_P2/tree/master/Module2_isoscape) of this site's repository. On the [repository page](https://github.com/cbataill/Isoecol2026_Srworkshop_P2), click **Code → Download ZIP**, unzip it and keep the `Module2_isoscape` folder (~400 MB). The data are also on [PURR](https://purr.purdue.edu/projects/isoecol2026srwo/info).
--   **Script only:** [download `Script_RF_isoscape_SouthAfrica.Rmd`](files/Script_RF_isoscape_SouthAfrica.Rmd). Every code chunk on this site comes from this script.
+1.  **[Download the workshop ZIP](https://github.com/cbataill/Isoecol2026_Srworkshop_P2/archive/refs/heads/master.zip)** (~400 MB). It contains this website's repository, including the data, the rasters and the script.
+2.  **Unzip it** somewhere easy to find (e.g. your Desktop or Documents, not your Downloads folder, and not inside OneDrive/iCloud if you can avoid it). On Windows, right-click → **Extract All**: don't open files from inside the zip.
+3.  Inside the unzipped folder `Isoecol2026_Srworkshop_P2-master`, the folder you need is **`Module2_isoscape`**. You can move it anywhere you like, as long as you keep its contents together.
+
+The data are also on [PURR](https://purr.purdue.edu/projects/isoecol2026srwo/info). If you only want the script, [download `Script_RF_isoscape_SouthAfrica.Rmd`](files/Script_RF_isoscape_SouthAfrica.Rmd): every code chunk on this site comes from it.
 
 ### Folder organisation
 
 ```
 Module2_isoscape/
+├─ Module2_isoscape.Rproj   ← double-click this to start
 ├─ Script_RF_isoscape_SouthAfrica.Rmd
 ├─ Data/
 │   └─ SouthAfrica_bioavailable_Sr_ARDUOUS.csv
 ├─ Project_Raster/
 │   ├─ clipped_za/      (~60 rasters, Eckert IV, 1 km)
 │   └─ neighbourhood/   (created by the script)
-└─ Output/              (created by the script; pre-computed results are included)
+└─ Output/              (pre-computed results included)
 ```
+
+### Set your working directory
+
+All the paths in the code (`Data/...`, `Project_Raster/...`, `Output/...`) are **relative to the `Module2_isoscape` folder**. R must be "looking" in that folder, otherwise you'll get errors like `cannot open file 'Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv': No such file or directory`.
+
+::: {.panel-tabset}
+## Option A: RStudio project (easiest)
+
+Double-click **`Module2_isoscape.Rproj`**. RStudio opens with the working directory already set to the right folder. Use this every time you come back to the workshop.
+
+## Option B: from the script
+
+Open `Script_RF_isoscape_SouthAfrica.Rmd` in RStudio, then **Session → Set Working Directory → To Source File Location**.
+
+## Option C: setwd()
+
+Type the path to *your* `Module2_isoscape` folder, with forward slashes `/` (also on Windows):
+
+```{r}
+#| label: setwd-example
+setwd("C:/Users/yourname/Documents/Module2_isoscape")   # Windows
+setwd("~/Documents/Module2_isoscape")                    # Mac / Linux
+```
+
+Tip: in RStudio, put the cursor between the quotes and press **Tab** to browse to the folder.
+:::
+
+**Then run this check.** It should print `TRUE` four times:
+
+```{r}
+#| label: check-wd
+getwd()   # should end in .../Module2_isoscape
+file.exists(c("Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv",
+              "Project_Raster/clipped_za/r.srsrq1.tif",
+              "Project_Raster/clipped_za/r.africa.Ca.0.tif",
+              "Output/sr_agg_all.txt"))
+```
+
+::: {.callout-caution collapse="true"}
+## I get FALSE or "cannot open file"
+
+-   **`getwd()` doesn't end in `Module2_isoscape`:** R is looking in the wrong folder. Use one of the options above.
+-   **It ends in `Module2_isoscape` but you still get `FALSE`:** check that you unzipped the whole folder (on Windows, files opened from inside a zip are not really there), and that `Data/` and `Project_Raster/` are directly inside `Module2_isoscape`, not one level deeper (e.g. `Module2_isoscape/Module2_isoscape/Data`).
+-   **Only the rasters are `FALSE`:** the download was incomplete. Download the ZIP again.
+:::
 
 ::: {.callout-tip icon="false"}
 ## Running the code
 
-1.  Open `Script_RF_isoscape_SouthAfrica.Rmd` in RStudio.
-2.  **Session → Set Working Directory → To Source File Location.**
-3.  Run the setup chunk: it installs any missing packages.
-4.  Run chunk by chunk (Ctrl+Shift+Enter) and look at each output. You can also copy the code from this site into the console.
+1.  Open the project (Option A), then open `Script_RF_isoscape_SouthAfrica.Rmd`.
+2.  Run the setup chunk: it installs any missing packages.
+3.  Run chunk by chunk (Ctrl+Shift+Enter on Windows, Cmd+Shift+Enter on Mac) and look at each output. You can also copy the code from this site into the console, as long as the working directory is set.
 
 The whole script takes ~15–20 min on a laptop. The two slow steps are VSURF (~8 min, [Step 4.3](04-cross-validation.qmd#step-4.3-predictor-selection-with-vsurf)) and the isoscape prediction (~5 min, [Step 5.2](06-isoscape.qmd)). If your laptop is slow, load the pre-computed results from `Output/`.
 :::

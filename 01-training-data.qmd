@@ -34,15 +34,7 @@ This script is adapted from Bataille et al. (2020), "Advances in global bioavail
 ::: callout-important
 ## Before you run anything: set your working directory
 
-All the paths below are relative to the **`Module2_isoscape`** folder. Open `Module2_isoscape.Rproj` (or use **Session → Set Working Directory**), then check that R can see the data. See [Set your working directory](index.qmd#set-your-working-directory) for details.
-
-```{r}
-#| label: check-wd
-getwd()   # should end in .../Module2_isoscape
-file.exists("Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv")   # should be TRUE
-```
-
-If you get `FALSE`, or later `cannot open file ... No such file or directory`, R is looking in the wrong folder.
+All the paths below are relative to the **`Module2_isoscape`** folder. Open `Module2_isoscape.Rproj` first (or use **Session → Set Working Directory**). The second chunk below checks this for you and stops with a clear message if R is looking in the wrong folder. See [Set your working directory](index.qmd#set-your-working-directory) for details.
 :::
 
 ```{r}
@@ -80,6 +72,23 @@ foreach::registerDoSEQ()
 
 ```{r}
 #| label: folders
+#!! IMPORTANT: R must be "looking" in your Module2_isoscape folder, i.e. the folder
+#!! that contains Data/, Project_Raster/ and Output/. All the paths in this script
+#!! are relative to that folder. Set it in ONE of these ways:
+#!!   1. Easiest: open Module2_isoscape.Rproj (double-click it) before anything else
+#!!   2. Or, in RStudio: Session > Set Working Directory > To Source File Location
+#!!   3. Or type the path to YOUR Module2_isoscape folder in the setwd() line below,
+#!!      then remove the # at the start of the line. Use / even on Windows.
+# setwd("C:/Users/yourname/Documents/Module2_isoscape")   # Windows example
+# setwd("~/Documents/Module2_isoscape")                    # Mac / Linux example
+
+# Check: getwd() should end in .../Module2_isoscape
+getwd()
+if (!file.exists("Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv")) {
+  stop("Cannot find Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv. ",
+       "Set the working directory to your Module2_isoscape folder (see the comments above).")
+}
+
 #!! Create or use sub folders to keep things tidy!
 mydir <- getwd()
 

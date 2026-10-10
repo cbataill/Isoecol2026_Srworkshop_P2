@@ -70,6 +70,23 @@ foreach::registerDoSEQ()
 ```
 
 ```{r}
+#!! IMPORTANT: R must be "looking" in your Module2_isoscape folder, i.e. the folder
+#!! that contains Data/, Project_Raster/ and Output/. All the paths in this script
+#!! are relative to that folder. Set it in ONE of these ways:
+#!!   1. Easiest: open Module2_isoscape.Rproj (double-click it) before anything else
+#!!   2. Or, in RStudio: Session > Set Working Directory > To Source File Location
+#!!   3. Or type the path to YOUR Module2_isoscape folder in the setwd() line below,
+#!!      then remove the # at the start of the line. Use / even on Windows.
+# setwd("C:/Users/yourname/Documents/Module2_isoscape")   # Windows example
+# setwd("~/Documents/Module2_isoscape")                    # Mac / Linux example
+
+# Check: getwd() should end in .../Module2_isoscape
+getwd()
+if (!file.exists("Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv")) {
+  stop("Cannot find Data/SouthAfrica_bioavailable_Sr_ARDUOUS.csv. ",
+       "Set the working directory to your Module2_isoscape folder (see the comments above).")
+}
+
 #!! Create or use sub folders to keep things tidy!
 mydir <- getwd()
 

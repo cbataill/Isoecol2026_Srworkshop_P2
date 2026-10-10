@@ -17,7 +17,7 @@ In [Module 1](https://github.com/stantis/IsoEcolWorkshop2026), Chris showed how 
 
 Each section of the workshop has its own page, listed in the sidebar on the left. We'll go through them together, but you're welcome to work at your own pace. If you get lost, use the sidebar or the search box to find the section we're on.
 
-Throughout the pages you'll find **🦋 Think · Pair · Share** breaks. Stop there, think on your own, discuss with your neighbour, then share with the room. Open the **"Things you might have noticed"** box only after the discussion!
+Throughout the pages you'll find **Think · Pair · Share** breaks, marked with our "I ❤ strontium" tile ![](images/sr-icon.svg){width="26" style="vertical-align:-6px" fig-alt="Strontium tile with a heart"}. Stop there, think on your own, discuss with your neighbour, then share with the room. Open the **"Things you might have noticed"** box only after the discussion!
 :::
 
 ![The random forest isoscape workflow (Bataille et al. 2020)](images/rf-workflow.png){width="75%"}

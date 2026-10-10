@@ -141,7 +141,7 @@ ggsave("Output/FigS4.pdf", final_plot, width = 16, height = 14)
 ![Partial dependence of predicted ⁸⁷Sr/⁸⁶Sr on the seven selected predictors](images/pdp.png){width="85%"}
 
 ::::::: think-pair-share
-### 📈 Think · Pair · Share: reading partial dependence
+### Think · Pair · Share: reading partial dependence
 
 Each curve is the predicted ⁸⁷Sr/⁸⁶Sr as one covariate varies, averaged over all the others. **Does each relationship make sense with what we know of strontium isotopes?**
 

@@ -300,7 +300,7 @@ plot(stack_all[[c("r.srsrq1", "r.meanage_geol", "r.distance", "r.map", "r.dust",
 ```
 
 ::::::: think-pair-share
-### 🌍 Think · Pair · Share: covariates for South Africa
+### Think · Pair · Share: covariates for South Africa
 
 The script loads ~60 rasters: global layers we use everywhere, plus layers that only exist here. **Which covariates help in South Africa that we don't have anywhere else?**
 

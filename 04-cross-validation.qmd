@@ -413,7 +413,7 @@ ggsave("Output/FigS7_residual_map.pdf", p_res, width = 8, height = 7)
 ![Spatial-CV residuals (observed − predicted) at each site](images/cv-residual-map.png){width="60%"}
 
 ::::::: think-pair-share
-### 📏 Think · Pair · Share: random vs. spatial CV
+### Think · Pair · Share: random vs. spatial CV
 
 Same model, same data: random CV R² = 0.77 (RMSE 0.0040), spatial-block CV R² = 0.71 (RMSE 0.0045). **Which one would you report in a paper, and why?**
 

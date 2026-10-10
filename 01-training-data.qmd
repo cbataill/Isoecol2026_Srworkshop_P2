@@ -142,7 +142,7 @@ plot(st_geometry(za_p))
 ```
 
 ::::::: think-pair-share
-### 🦋 Think · Pair · Share: a map for a butterfly
+### Think · Pair · Share: a map for a butterfly
 
 You want to find where painted ladies (*Vanessa cardui*) caught in South Africa grew up, from the ⁸⁷Sr/⁸⁶Sr of their wings. **What training data and what kind of bioavailable Sr map do you need?**
 

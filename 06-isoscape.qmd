@@ -148,7 +148,7 @@ Zoom into the south-western Cape, where most training sites are:
 :::
 
 ::::::: think-pair-share
-### 🗺️ Think · Pair · Share: patterns and uncertainty
+### Think · Pair · Share: patterns and uncertainty
 
 Mean isoscape and 1 SD from the quantile random forest. **Can you explain the patterns, and would you trust this map to assign a butterfly?**
 

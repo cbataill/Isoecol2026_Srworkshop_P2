@@ -168,7 +168,7 @@ write.table(sr_agg,"Output/sr_agg_all.txt",sep = "\t",col.names = T, row.names =
 ```
 
 ::::::: think-pair-share
-### 🔗 Think · Pair · Share: correlated covariates
+### Think · Pair · Share: correlated covariates
 
 Many covariates carry the same information: bedrock Sr at 1, 5, 10 and 25 km; rainfall, aridity and PET; Ca at 0–20 and 20–50 cm… **What does collinearity do to a random forest, and how do we deal with it?**
 

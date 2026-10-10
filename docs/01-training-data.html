@@ -282,7 +282,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">October 9, 2026</p>
+      <p class="date-modified">October 10, 2026</p>
     </div>
   </div>
     
@@ -463,19 +463,33 @@ Screening applied
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(sr_orig<span class="sc">$</span>material_type)</span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(sr_orig<span class="sc">$</span>X87Sr86Sr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p><em>What you should see:</em></p>
+<pre><code>## [1] 927
+##                       inorganic-organic composite : soil   60
+##                        organism : animal : animal tissue    3
+##                 organism : animal : animal tissue : bone   24
+##                organism : animal : animal tissue : shell   64
+##                organism : animal : animal tissue : tooth   21
+##       organism : animal : animal tissue : tooth : dentin    1
+##       organism : animal : animal tissue : tooth : enamel  146
+##                          organism : plant : plant tissue  393
+##                   organism : plant : plant tissue : leaf  212
+##                           organism : plant : whole plant    3
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+##  0.7063  0.7123  0.7154  0.7203  0.7262  0.7885</code></pre>
 </section>
 <section id="step-1.2-project-the-data-into-eckert-iv" class="level2">
 <h2 class="anchored" data-anchor-id="step-1.2-project-the-data-into-eckert-iv">Step 1.2: Project the data into Eckert IV</h2>
 <p>We will use the Eckert IV equal-area projection (1 km pixels) for everything.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>sr_proj <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(sr_orig, <span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"collection_decimal_longitude"</span>, <span class="st">"collection_decimal_latitude"</span>), <span class="at">crs =</span> <span class="fu">st_crs</span>(<span class="dv">4326</span>), <span class="at">remove =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> eck4)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sr_proj[<span class="st">"X87Sr86Sr"</span>], <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.6</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>sr_proj <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(sr_orig, <span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"collection_decimal_longitude"</span>, <span class="st">"collection_decimal_latitude"</span>), <span class="at">crs =</span> <span class="fu">st_crs</span>(<span class="dv">4326</span>), <span class="at">remove =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> eck4)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sr_proj[<span class="st">"X87Sr86Sr"</span>], <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.6</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/training-data-map.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Training data: 927 records at 579 sites, coloured by sample type"><img src="images/training-data-map.png" class="img-fluid figure-img" style="width:70.0%" alt="Training data: 927 records at 579 sites, coloured by sample type"></a></p>
-<figcaption>Training data: 927 records at 579 sites, coloured by sample type</figcaption>
+<p><a href="images/fig1-training-sites.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Training sites on elevation, coloured by sample type (Output/Fig1.pdf, made in Step 5.3)"><img src="images/fig1-training-sites.png" class="img-fluid figure-img" style="width:70.0%" alt="Training sites on elevation, coloured by sample type (Output/Fig1.pdf, made in Step 5.3)"></a></p>
+<figcaption>Training sites on elevation, coloured by sample type (<code>Output/Fig1.pdf</code>, made in Step 5.3)</figcaption>
 </figure>
 </div>
 </section>
@@ -483,12 +497,12 @@ Screening applied
 <h2 class="anchored" data-anchor-id="step-1.3-administrative-maps">Step 1.3: Administrative maps</h2>
 <p>Country boundaries for the figures, from Natural Earth, reprojected into Eckert IV.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>world <span class="ot">&lt;-</span> <span class="fu">ne_countries</span>(<span class="at">scale =</span> <span class="st">"medium"</span>, <span class="at">returnclass =</span> <span class="st">"sf"</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>world_p <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(world, <span class="at">crs =</span> <span class="fu">st_crs</span>(<span class="dv">4326</span>)) <span class="sc">%&gt;%</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> eck4)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep South Africa and neighbouring countries for the figures</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>za_p <span class="ot">&lt;-</span> world_p[world_p<span class="sc">$</span>admin <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"South Africa"</span>, <span class="st">"Lesotho"</span>, <span class="st">"eSwatini"</span>, <span class="st">"Swaziland"</span>, <span class="st">"Namibia"</span>, <span class="st">"Botswana"</span>, <span class="st">"Zimbabwe"</span>, <span class="st">"Mozambique"</span>),]</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(za_p))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>world <span class="ot">&lt;-</span> <span class="fu">ne_countries</span>(<span class="at">scale =</span> <span class="st">"medium"</span>, <span class="at">returnclass =</span> <span class="st">"sf"</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>world_p <span class="ot">&lt;-</span> <span class="fu">st_as_sf</span>(world, <span class="at">crs =</span> <span class="fu">st_crs</span>(<span class="dv">4326</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> eck4)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep South Africa and neighbouring countries for the figures</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>za_p <span class="ot">&lt;-</span> world_p[world_p<span class="sc">$</span>admin <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"South Africa"</span>, <span class="st">"Lesotho"</span>, <span class="st">"eSwatini"</span>, <span class="st">"Swaziland"</span>, <span class="st">"Namibia"</span>, <span class="st">"Botswana"</span>, <span class="st">"Zimbabwe"</span>, <span class="st">"Mozambique"</span>),]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(za_p))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="think-pair-share-a-map-for-a-butterfly" class="level3 think-pair-share">
 <h3 class="anchored" data-anchor-id="think-pair-share-a-map-for-a-butterfly">Think · Pair · Share: a map for a butterfly</h3>
@@ -497,7 +511,7 @@ Screening applied
 <div class="tps-step">
 <p><strong>💭 Think</strong> <span class="tps-time">2 min</span></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(sr_orig<span class="sc">$</span>material_type)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(sr_orig<span class="sc">$</span>material_type)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>On your own, look at the sample types and the map above.</p>
 <ul>

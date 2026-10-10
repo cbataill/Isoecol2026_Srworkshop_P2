@@ -280,7 +280,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">October 9, 2026</p>
+      <p class="date-modified">October 10, 2026</p>
     </div>
   </div>
     
@@ -345,11 +345,11 @@ In this section
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/importance.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Permutation importance of the seven selected predictors"><img src="images/importance.png" class="img-fluid figure-img" style="width:60.0%" alt="Permutation importance of the seven selected predictors"></a></p>
-<figcaption>Permutation importance of the seven selected predictors</figcaption>
+<p><a href="images/figS3-importance.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Output of Step 4.8 (Fig. S3): permutation importance of the 16 predictors in the final model"><img src="images/figS3-importance.png" class="img-fluid figure-img" style="width:75.0%" alt="Output of Step 4.8 (Fig. S3): permutation importance of the 16 predictors in the final model"></a></p>
+<figcaption>Output of Step 4.8 (Fig. S3): permutation importance of the 16 predictors in the final model</figcaption>
 </figure>
 </div>
-<p><code>r.srsrq1.f25</code>, the mean bedrock ⁸⁷Sr/⁸⁶Sr within 25 km, is by far the most important predictor.</p>
+<p><code>r.srsrq1.f25</code>, the mean bedrock ⁸⁷Sr/⁸⁶Sr within 25 km, is by far the most important predictor, followed by <code>r.srsrq1.f05</code>, <code>r.meanage_geol</code>, <code>r.africa.Ca.0</code>, <code>r.wetland</code> and <code>r.distance</code>. Notice that the pixel-scale bedrock model <code>r.srsrq1</code> comes last: its neighbourhood versions carry the same information.</p>
 <div class="callout callout-style-default callout-warning callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -443,8 +443,8 @@ Importance is not a process
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/pdp.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Partial dependence of predicted ⁸⁷Sr/⁸⁶Sr on the seven selected predictors"><img src="images/pdp.png" class="img-fluid figure-img" style="width:85.0%" alt="Partial dependence of predicted ⁸⁷Sr/⁸⁶Sr on the seven selected predictors"></a></p>
-<figcaption>Partial dependence of predicted ⁸⁷Sr/⁸⁶Sr on the seven selected predictors</figcaption>
+<p><a href="images/figS4-pdp.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Output of Step 4.8 (Fig. S4): partial dependence of predicted ⁸⁷Sr/⁸⁶Sr on the 16 predictors, with the distribution of the training sites below each curve"><img src="images/figS4-pdp.png" class="img-fluid figure-img" alt="Output of Step 4.8 (Fig. S4): partial dependence of predicted ⁸⁷Sr/⁸⁶Sr on the 16 predictors, with the distribution of the training sites below each curve"></a></p>
+<figcaption>Output of Step 4.8 (Fig. S4): partial dependence of predicted ⁸⁷Sr/⁸⁶Sr on the 16 predictors, with the distribution of the training sites below each curve</figcaption>
 </figure>
 </div>
 <section id="think-pair-share-reading-partial-dependence" class="level3 think-pair-share">
@@ -453,7 +453,7 @@ Importance is not a process
 <div class="tps-steps">
 <div class="tps-step">
 <p><strong>💭 Think</strong> <span class="tps-time">2 min</span></p>
-<p>On your own, describe each of the seven curves:</p>
+<p>On your own, describe the curves (start with the six most important predictors):</p>
 <ul>
 <li>Rising, falling, flat, or a step?</li>
 <li>Where along the x-axis are the data?</li>
@@ -500,7 +500,8 @@ Things you might have noticed
 <li>The sharp step in <code>f25</code> at ~0.718–0.720: a real threshold, or a few radiogenic sites (sparse rug) driving one split?</li>
 <li>Extractable Ca: a weak <em>positive</em> effect. Did you expect high Ca → carbonate → lower ⁸⁷Sr/⁸⁶Sr? Could Ca instead track arid, calcrete-rich soils over old basement?</li>
 <li>Wetland: higher Sr where wetland cover is low. A process, or a proxy for location?</li>
-<li>Elevation: almost flat, with ~0 importance. Why is it still in the model?</li>
+<li><code>r.srsrq1</code> (bedrock under the pixel) has ~0 importance, while its 5 and 25 km versions dominate. What does that say about where bioavailable Sr comes from?</li>
+<li>The coarse layers (<code>r.salt</code>, <code>r.dust</code>, <code>r.volc</code>, <code>r.foss</code>) have flat curves and low importance. Process, or proxy for location?</li>
 </ul>
 <p><strong>⚠️ Read PDPs carefully</strong></p>
 <ul>
@@ -526,7 +527,7 @@ Key takeaways
 </div>
 <div class="callout-body-container callout-body">
 <ul>
-<li>Neighbourhood bedrock ⁸⁷Sr/⁸⁶Sr dominates the model, followed by soil Ca, local bedrock, wetland, age and distance to the coast.</li>
+<li>Neighbourhood bedrock ⁸⁷Sr/⁸⁶Sr dominates the model, followed by geological age, soil Ca, wetland and distance to the coast.</li>
 <li>Most partial dependence curves agree with Sr cycling; the ones that don’t are worth a closer look.</li>
 <li>Random forests cannot extrapolate beyond the range of the training data.</li>
 </ul>

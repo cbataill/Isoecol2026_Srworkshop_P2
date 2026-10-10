@@ -133,18 +133,14 @@ plot(rf_sr_sd, col = viridis_pal(option = "turbo")(13), breaks = breakpoints2, a
 plot(st_geometry(za_p), add = TRUE, border = "grey30", lwd = 0.5)
 ```
 
-::: {layout-ncol="2"}
-![Bioavailable ⁸⁷Sr/⁸⁶Sr](images/isoscape-mean.png)
-
-![Uncertainty (1 SD)](images/isoscape-sd.png)
-:::
+![Output of Step 5.3 (Fig. 2): bioavailable ⁸⁷Sr/⁸⁶Sr (left) and its uncertainty, 1 SD (right), with the training sites](images/fig2-isoscape-sd.png)
 
 Zoom into the south-western Cape, where most training sites are:
 
 ::: {layout-ncol="2"}
-![Mean ⁸⁷Sr/⁸⁶Sr, south-western Cape](images/swcape-mean.png)
+![](images/swcape-mean.png)
 
-![Uncertainty (1 SD), south-western Cape](images/swcape-sd.png)
+![](images/swcape-sd.png)
 :::
 
 ::::::: think-pair-share
@@ -202,7 +198,7 @@ Tell the room:
 -   The highest SD (\> 0.02) is over the same radiogenic terrains: old rocks have very heterogeneous minerals, and there are few sites.
 -   The SD is low over the Karoo interior despite sparse data. A quantile random forest reports the spread of *similar training sites*, not the distance to the data.
 -   So the SD can underestimate the error where the model extrapolates. Pair it with an area of applicability (Meyer & Pebesma 2021, `CAST::aoa()`).
--   Check sharp boundaries and blocky shapes against the covariates that created them.
+-   Check sharp boundaries and blocky shapes against the covariates that created them. For example, the straight north–south edges in the south-western Cape SD map follow no geological contact: they likely come from the coarse (~1–2°) deposition layers that entered the model with `candidate_set <- "all"`.
 
 **🦋 For assignment**
 

@@ -291,7 +291,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">October 9, 2026</p>
+      <p class="date-modified">October 10, 2026</p>
     </div>
   </div>
     
@@ -370,10 +370,11 @@ In this section
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/cv-folds.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Random folds are mixed everywhere; spatial folds are blocks"><img src="images/cv-folds.png" class="img-fluid figure-img" style="width:80.0%" alt="Random folds are mixed everywhere; spatial folds are blocks"></a></p>
-<figcaption>Random folds are mixed everywhere; spatial folds are blocks</figcaption>
+<p><a href="images/step4-folds.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Output of Step 4.2: random folds are mixed everywhere; spatial folds are blocks"><img src="images/step4-folds.png" class="img-fluid figure-img" style="width:85.0%" alt="Output of Step 4.2: random folds are mixed everywhere; spatial folds are blocks"></a></p>
+<figcaption>Output of Step 4.2: random folds are mixed everywhere; spatial folds are blocks</figcaption>
 </figure>
 </div>
+<p>The spatial blocks are very unequal: the smallest holds 5 sites and the largest 112.</p>
 <p>A good cross-validation should mimic the prediction situation (Meyer &amp; Pebesma, 2022). We compare the distance from each test site to its nearest training site with the distance from each pixel of the map to its nearest training site.</p>
 <div class="cell">
 <details class="code-fold">
@@ -414,10 +415,13 @@ In this section
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/cv-distances.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Distance to the nearest training site: map pixels vs.&nbsp;random CV vs.&nbsp;spatial CV"><img src="images/cv-distances.png" class="img-fluid figure-img" style="width:80.0%" alt="Distance to the nearest training site: map pixels vs.&nbsp;random CV vs.&nbsp;spatial CV"></a></p>
-<figcaption>Distance to the nearest training site: map pixels vs.&nbsp;random CV vs.&nbsp;spatial CV</figcaption>
+<p><a href="images/figS5-distances.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Output of Step 4.2 (Fig. S5): distance to the nearest training site for map pixels, random CV and spatial CV"><img src="images/figS5-distances.png" class="img-fluid figure-img" style="width:80.0%" alt="Output of Step 4.2 (Fig. S5): distance to the nearest training site for map pixels, random CV and spatial CV"></a></p>
+<figcaption>Output of Step 4.2 (Fig. S5): distance to the nearest training site for map pixels, random CV and spatial CV</figcaption>
 </figure>
 </div>
+<p><em>What you should see:</em></p>
+<pre><code>##        map  random_CV spatial_CV
+##       83.8        5.5       80.5</code></pre>
 <div class="callout callout-style-default callout-warning no-icon callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -428,7 +432,7 @@ In this section
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>In random cross-validation, the test sites are typically less than 1 km from a training site (median 6 km), whereas the median map pixel is 84 km from any data. The spatial cross-validation (84 km) is much closer to the real prediction situation. <strong>This is why we use the spatial cross-validation for predictor selection (Step 4.4) and tuning (Step 4.6).</strong></p>
+<p>In random cross-validation, the test sites are typically a few km from a training site (median ~6 km), whereas the median map pixel is ~84 km from any data. The spatial cross-validation (~81 km) is much closer to the real prediction situation. <strong>This is why we use the spatial cross-validation for predictor selection (Step 4.4) and tuning (Step 4.6).</strong></p>
 </div>
 </div>
 </section>
@@ -490,63 +494,71 @@ This step takes ~8 minutes
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Start it before lunch! If your laptop is slow, load the saved result instead: <code>load("Output/VSURF_all")</code>.</p>
+<p>Start it before lunch! If your laptop is slow, load the pre-computed result instead: <code>load("Output/VSURF_all.gz")</code> (note the <code>.gz</code>), then continue with the next chunk.</p>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set a random seed for reproducibility</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a copy of 'sr_agg'</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>sr_agg0 <span class="ot">&lt;-</span> sr_agg</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply VSURF algorithm to select relevant variables for predicting 'X87Sr86Sr'</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Using the 'ranger' implementation with parallelization</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Columns 1 to 3 are X87Sr86Sr, X and Y: the covariates start at column 4</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>sr_agg1.vsurf <span class="ot">&lt;-</span> <span class="fu">VSURF</span>(</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  sr_agg0[, <span class="dv">4</span><span class="sc">:</span><span class="fu">ncol</span>(sr_agg0)],</span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  sr_agg0<span class="sc">$</span>X87Sr86Sr,</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">mtry =</span> <span class="fu">max</span>(<span class="fu">floor</span>((<span class="fu">ncol</span>(sr_agg0) <span class="sc">-</span> <span class="dv">3</span>)<span class="sc">/</span><span class="dv">3</span>), <span class="dv">1</span>),</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a> <span class="at">ntree.thres =</span> <span class="dv">1000</span>,</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a> <span class="at">nfor.thres =</span> <span class="dv">20</span>,</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a> <span class="at">nmin =</span> <span class="dv">1</span>,</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a> <span class="at">ntree.interp =</span> <span class="dv">1000</span>,</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a> <span class="at">nfor.interp =</span> <span class="dv">10</span>,</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a> <span class="at">nsd =</span> <span class="dv">1</span>,</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a> <span class="at">ntree.pred =</span> <span class="dv">1000</span>,</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a> <span class="at">nfor.pred =</span> <span class="dv">10</span>,</span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a> <span class="at">nmj =</span> <span class="dv">1</span>,</span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">RFimplem =</span> <span class="st">"ranger"</span>,</span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">parallel =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">ncores =</span> n_cores,</span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">clusterType =</span> <span class="st">"PSOCK"</span></span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(sr_agg1.vsurf, <span class="at">file =</span> <span class="st">"Output/VSURF_all"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set a random seed for reproducibility</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a copy of 'sr_agg'</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>sr_agg0 <span class="ot">&lt;-</span> sr_agg</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply VSURF algorithm to select relevant variables for predicting 'X87Sr86Sr'</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Using the 'ranger' implementation with parallelization</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Columns 1 to 3 are X87Sr86Sr, X and Y: the covariates start at column 4</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>sr_agg1.vsurf <span class="ot">&lt;-</span> <span class="fu">VSURF</span>(</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  sr_agg0[, <span class="dv">4</span><span class="sc">:</span><span class="fu">ncol</span>(sr_agg0)],</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  sr_agg0<span class="sc">$</span>X87Sr86Sr,</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">mtry =</span> <span class="fu">max</span>(<span class="fu">floor</span>((<span class="fu">ncol</span>(sr_agg0) <span class="sc">-</span> <span class="dv">3</span>)<span class="sc">/</span><span class="dv">3</span>), <span class="dv">1</span>),</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a> <span class="at">ntree.thres =</span> <span class="dv">1000</span>,</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a> <span class="at">nfor.thres =</span> <span class="dv">20</span>,</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a> <span class="at">nmin =</span> <span class="dv">1</span>,</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a> <span class="at">ntree.interp =</span> <span class="dv">1000</span>,</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a> <span class="at">nfor.interp =</span> <span class="dv">10</span>,</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a> <span class="at">nsd =</span> <span class="dv">1</span>,</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a> <span class="at">ntree.pred =</span> <span class="dv">1000</span>,</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a> <span class="at">nfor.pred =</span> <span class="dv">10</span>,</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a> <span class="at">nmj =</span> <span class="dv">1</span>,</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">RFimplem =</span> <span class="st">"ranger"</span>,</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">parallel =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">ncores =</span> n_cores,</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">clusterType =</span> <span class="st">"PSOCK"</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(sr_agg1.vsurf, <span class="at">file =</span> <span class="st">"Output/VSURF_all"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Plot VSURF results</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sr_agg1.vsurf)</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Names of the covariates (columns 4 to end)</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>covariate_names <span class="ot">&lt;-</span> <span class="fu">names</span>(sr_agg0)[<span class="dv">4</span><span class="sc">:</span><span class="fu">ncol</span>(sr_agg0)]</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Variables selected at each of the three VSURF steps</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>vsurf_sets <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">thres  =</span> covariate_names[sr_agg1.vsurf<span class="sc">$</span>varselect.thres],</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>                   <span class="at">interp =</span> covariate_names[sr_agg1.vsurf<span class="sc">$</span>varselect.interp],</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>                   <span class="at">pred   =</span> covariate_names[sr_agg1.vsurf<span class="sc">$</span>varselect.pred])</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="fu">lengths</span>(vsurf_sets)</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>vsurf_sets</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Choose the VSURF step used for the next steps: "interp" (default) or "pred" (as in the global script)</span></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>vsurf_step <span class="ot">&lt;-</span> <span class="st">"interp"</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>vars_vsurf <span class="ot">&lt;-</span> vsurf_sets[[vsurf_step]]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Plot VSURF results</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(sr_agg1.vsurf)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Names of the covariates (columns 4 to end)</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>covariate_names <span class="ot">&lt;-</span> <span class="fu">names</span>(sr_agg0)[<span class="dv">4</span><span class="sc">:</span><span class="fu">ncol</span>(sr_agg0)]</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Variables selected at each of the three VSURF steps</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>vsurf_sets <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">thres  =</span> covariate_names[sr_agg1.vsurf<span class="sc">$</span>varselect.thres],</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                   <span class="at">interp =</span> covariate_names[sr_agg1.vsurf<span class="sc">$</span>varselect.interp],</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                   <span class="at">pred   =</span> covariate_names[sr_agg1.vsurf<span class="sc">$</span>varselect.pred])</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="fu">lengths</span>(vsurf_sets)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>vsurf_sets</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Choose the VSURF step used for the next steps: "interp" (default) or "pred" (as in the global script)</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>vsurf_step <span class="ot">&lt;-</span> <span class="st">"interp"</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>vars_vsurf <span class="ot">&lt;-</span> vsurf_sets[[vsurf_step]]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/vsurf.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="VSURF: OOB error drops quickly and reaches a minimum at about seven variables"><img src="images/vsurf.png" class="img-fluid figure-img" style="width:80.0%" alt="VSURF: OOB error drops quickly and reaches a minimum at about seven variables"></a></p>
-<figcaption>VSURF: OOB error drops quickly and reaches a minimum at about seven variables</figcaption>
+<p><a href="images/step4-vsurf.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Output of Step 4.3: the VSURF steps. Bottom left: the interpretation step keeps 16 variables (red line)"><img src="images/step4-vsurf.png" class="img-fluid figure-img" style="width:80.0%" alt="Output of Step 4.3: the VSURF steps. Bottom left: the interpretation step keeps 16 variables (red line)"></a></p>
+<figcaption>Output of Step 4.3: the VSURF steps. Bottom left: the interpretation step keeps 16 variables (red line)</figcaption>
 </figure>
 </div>
+<p><em>What you should see:</em></p>
+<pre><code>##  thres interp   pred
+##     41     16      9
+## $interp
+##  [1] "r.srsrq1.f25"   "r.srsrq1.f05"   "r.meanage_geol" "r.distance"
+##  [5] "r.africa.Ca.0"  "r.wetland"      "r.foss"         "r.africa.Fe.20"
+##  [9] "r.elevation"    "r.salt"         "r.dust"         "r.africa.S.20"
+## [13] "r.age"          "r.volc"         "r.africa.K.0"   "r.srsrq1"</code></pre>
 </section>
 <section id="step-4.4-spatial-pruning-of-the-predictors" class="level2">
 <h2 class="anchored" data-anchor-id="step-4.4-spatial-pruning-of-the-predictors">Step 4.4: Spatial pruning of the predictors</h2>
@@ -558,34 +570,35 @@ This step takes ~8 minutes
 </ol>
 <p>Why 2%? The spatial-CV RMSE changes by ~0.5–1% just by changing the random seed, so smaller “improvements” are noise. (For a more systematic approach, see the forward feature selection with spatial CV of Meyer et al.&nbsp;2018, in the CAST package.)</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>spatial_pruning <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>tol <span class="ot">&lt;-</span> <span class="fl">0.02</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>ntree_pruning <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>vars_final <span class="ot">&lt;-</span> vars_vsurf</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>best <span class="ot">&lt;-</span> <span class="fu">cv_ranger</span>(vars_final, spatial_folds, <span class="at">num.trees =</span> ntree_pruning)[<span class="st">"RMSE"</span>]</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>pruning_path <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">step =</span> <span class="dv">0</span>, <span class="at">n_vars =</span> <span class="fu">length</span>(vars_final), <span class="at">RMSE =</span> best, <span class="at">removed =</span> <span class="st">"start (VSURF set)"</span>)</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (spatial_pruning) {</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">repeat</span> {</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">length</span>(vars_final) <span class="sc">&lt;=</span> <span class="dv">2</span>) <span class="cf">break</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># spatial-CV RMSE after removing each variable in turn</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    rmse_without <span class="ot">&lt;-</span> <span class="fu">sapply</span>(vars_final, <span class="cf">function</span>(v) <span class="fu">cv_ranger</span>(<span class="fu">setdiff</span>(vars_final, v), spatial_folds, <span class="at">num.trees =</span> ntree_pruning)[<span class="st">"RMSE"</span>])</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">min</span>(rmse_without) <span class="sc">&lt;</span> best <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> tol)) {</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>      worst <span class="ot">&lt;-</span> vars_final[<span class="fu">which.min</span>(rmse_without)]</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>      vars_final <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(vars_final, worst)</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>      best <span class="ot">&lt;-</span> <span class="fu">min</span>(rmse_without)</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>      pruning_path <span class="ot">&lt;-</span> <span class="fu">rbind</span>(pruning_path, <span class="fu">data.frame</span>(<span class="at">step =</span> <span class="fu">nrow</span>(pruning_path), <span class="at">n_vars =</span> <span class="fu">length</span>(vars_final),</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>                                                     <span class="at">RMSE =</span> best, <span class="at">removed =</span> worst))</span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="cf">break</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>pruning_path</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>vars_final</span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Training dataset for random forest: 87Sr/86Sr + selected predictors</span></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>training_rf <span class="ot">&lt;-</span> sr_agg[, <span class="fu">c</span>(<span class="st">"X87Sr86Sr"</span>, vars_final)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>spatial_pruning <span class="ot">&lt;-</span> <span class="cn">TRUE</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>tol <span class="ot">&lt;-</span> <span class="fl">0.02</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>ntree_pruning <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>vars_final <span class="ot">&lt;-</span> vars_vsurf</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>best <span class="ot">&lt;-</span> <span class="fu">cv_ranger</span>(vars_final, spatial_folds, <span class="at">num.trees =</span> ntree_pruning)[<span class="st">"RMSE"</span>]</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>pruning_path <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">step =</span> <span class="dv">0</span>, <span class="at">n_vars =</span> <span class="fu">length</span>(vars_final), <span class="at">RMSE =</span> best, <span class="at">removed =</span> <span class="st">"start (VSURF set)"</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (spatial_pruning) {</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">repeat</span> {</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">length</span>(vars_final) <span class="sc">&lt;=</span> <span class="dv">2</span>) <span class="cf">break</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># spatial-CV RMSE after removing each variable in turn</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    rmse_without <span class="ot">&lt;-</span> <span class="fu">sapply</span>(vars_final, <span class="cf">function</span>(v) <span class="fu">cv_ranger</span>(<span class="fu">setdiff</span>(vars_final, v), spatial_folds, <span class="at">num.trees =</span> ntree_pruning)[<span class="st">"RMSE"</span>])</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">min</span>(rmse_without) <span class="sc">&lt;</span> best <span class="sc">*</span> (<span class="dv">1</span> <span class="sc">-</span> tol)) {</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>      worst <span class="ot">&lt;-</span> vars_final[<span class="fu">which.min</span>(rmse_without)]</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>      vars_final <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(vars_final, worst)</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>      best <span class="ot">&lt;-</span> <span class="fu">min</span>(rmse_without)</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>      pruning_path <span class="ot">&lt;-</span> <span class="fu">rbind</span>(pruning_path, <span class="fu">data.frame</span>(<span class="at">step =</span> <span class="fu">nrow</span>(pruning_path), <span class="at">n_vars =</span> <span class="fu">length</span>(vars_final),</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>                                                     <span class="at">RMSE =</span> best, <span class="at">removed =</span> worst))</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="cf">break</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>pruning_path</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>vars_final</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Training dataset for random forest: 87Sr/86Sr + selected predictors</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>training_rf <span class="ot">&lt;-</span> sr_agg[, <span class="fu">c</span>(<span class="st">"X87Sr86Sr"</span>, vars_final)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>In our run, removing any single variable never improved the spatial-CV RMSE by more than 2%, so the spatial pruning kept all <strong>16</strong> VSURF variables.</p>
 </section>
 <section id="step-4.5-compare-the-predictor-sets" class="level2">
 <h2 class="anchored" data-anchor-id="step-4.5-compare-the-predictor-sets">Step 4.5: Compare the predictor sets</h2>
@@ -593,44 +606,44 @@ This step takes ~8 minutes
 <div class="cell">
 <details class="code-fold">
 <summary>Show the code</summary>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>sets <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="st">"All candidates"</span> <span class="ot">=</span> <span class="fu">names</span>(sr_agg)[<span class="dv">4</span><span class="sc">:</span><span class="fu">ncol</span>(sr_agg)],</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>             <span class="st">"VSURF thres"</span> <span class="ot">=</span> vsurf_sets<span class="sc">$</span>thres,</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>             <span class="st">"VSURF interp"</span> <span class="ot">=</span> vsurf_sets<span class="sc">$</span>interp,</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>             <span class="st">"VSURF pred"</span> <span class="ot">=</span> vsurf_sets<span class="sc">$</span>pred,</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>             <span class="st">"Final (spatially pruned)"</span> <span class="ot">=</span> vars_final)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>set_compare <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(<span class="fu">names</span>(sets), <span class="cf">function</span>(s) {</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(<span class="at">set =</span> s, <span class="at">n_vars =</span> <span class="fu">length</span>(sets[[s]]),</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>             <span class="at">CV =</span> <span class="fu">c</span>(<span class="st">"Random CV"</span>, <span class="st">"Spatial CV"</span>),</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>             <span class="at">R2 =</span> <span class="fu">c</span>(<span class="fu">cv_ranger</span>(sets[[s]], random_folds)[<span class="st">"R2"</span>], <span class="fu">cv_ranger</span>(sets[[s]], spatial_folds)[<span class="st">"R2"</span>]))</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>}))</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>set_compare<span class="sc">$</span>set <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">paste0</span>(set_compare<span class="sc">$</span>set, <span class="st">"</span><span class="sc">\n</span><span class="st">("</span>, set_compare<span class="sc">$</span>n_vars, <span class="st">" var.)"</span>),</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>                          <span class="at">levels =</span> <span class="fu">unique</span>(<span class="fu">paste0</span>(set_compare<span class="sc">$</span>set, <span class="st">"</span><span class="sc">\n</span><span class="st">("</span>, set_compare<span class="sc">$</span>n_vars, <span class="st">" var.)"</span>)))</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>set_compare</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>p_sets <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(set_compare, <span class="fu">aes</span>(<span class="at">x =</span> set, <span class="at">y =</span> R2, <span class="at">fill =</span> CV)) <span class="sc">+</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="st">"dodge"</span>) <span class="sc">+</span></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(R2, <span class="dv">2</span>)), <span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="fl">0.9</span>), <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.3</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Random CV"</span> <span class="ot">=</span> <span class="st">"grey60"</span>, <span class="st">"Spatial CV"</span> <span class="ot">=</span> <span class="st">"darkorange"</span>)) <span class="sc">+</span></span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">"Cross-validated R2"</span>, <span class="at">fill =</span> <span class="cn">NULL</span>, <span class="at">title =</span> <span class="st">"Random CV hides what spatial CV reveals"</span>) <span class="sc">+</span></span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>p_sets</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="st">"Output/FigS6_predictor_sets_CV.pdf"</span>, p_sets, <span class="at">width =</span> <span class="dv">10</span>, <span class="at">height =</span> <span class="dv">5</span>)</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Path of the spatial pruning</span></span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">nrow</span>(pruning_path) <span class="sc">&gt;</span> <span class="dv">1</span>) {</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(pruning_path, <span class="fu">aes</span>(<span class="at">x =</span> step, <span class="at">y =</span> RMSE)) <span class="sc">+</span></span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>() <span class="sc">+</span> <span class="fu">geom_point</span>() <span class="sc">+</span></span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> removed), <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.8</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Pruning step"</span>, <span class="at">y =</span> <span class="st">"Spatial-CV RMSE"</span>, <span class="at">title =</span> <span class="st">"Spatial pruning of the VSURF variables"</span>) <span class="sc">+</span></span>
-<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_minimal</span>()</span>
-<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>sets <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="st">"All candidates"</span> <span class="ot">=</span> <span class="fu">names</span>(sr_agg)[<span class="dv">4</span><span class="sc">:</span><span class="fu">ncol</span>(sr_agg)],</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>             <span class="st">"VSURF thres"</span> <span class="ot">=</span> vsurf_sets<span class="sc">$</span>thres,</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>             <span class="st">"VSURF interp"</span> <span class="ot">=</span> vsurf_sets<span class="sc">$</span>interp,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>             <span class="st">"VSURF pred"</span> <span class="ot">=</span> vsurf_sets<span class="sc">$</span>pred,</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>             <span class="st">"Final (spatially pruned)"</span> <span class="ot">=</span> vars_final)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>set_compare <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(<span class="fu">names</span>(sets), <span class="cf">function</span>(s) {</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">data.frame</span>(<span class="at">set =</span> s, <span class="at">n_vars =</span> <span class="fu">length</span>(sets[[s]]),</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>             <span class="at">CV =</span> <span class="fu">c</span>(<span class="st">"Random CV"</span>, <span class="st">"Spatial CV"</span>),</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>             <span class="at">R2 =</span> <span class="fu">c</span>(<span class="fu">cv_ranger</span>(sets[[s]], random_folds)[<span class="st">"R2"</span>], <span class="fu">cv_ranger</span>(sets[[s]], spatial_folds)[<span class="st">"R2"</span>]))</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>}))</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>set_compare<span class="sc">$</span>set <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">paste0</span>(set_compare<span class="sc">$</span>set, <span class="st">"</span><span class="sc">\n</span><span class="st">("</span>, set_compare<span class="sc">$</span>n_vars, <span class="st">" var.)"</span>),</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>                          <span class="at">levels =</span> <span class="fu">unique</span>(<span class="fu">paste0</span>(set_compare<span class="sc">$</span>set, <span class="st">"</span><span class="sc">\n</span><span class="st">("</span>, set_compare<span class="sc">$</span>n_vars, <span class="st">" var.)"</span>)))</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>set_compare</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>p_sets <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(set_compare, <span class="fu">aes</span>(<span class="at">x =</span> set, <span class="at">y =</span> R2, <span class="at">fill =</span> CV)) <span class="sc">+</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="st">"dodge"</span>) <span class="sc">+</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(R2, <span class="dv">2</span>)), <span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="fl">0.9</span>), <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.3</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Random CV"</span> <span class="ot">=</span> <span class="st">"grey60"</span>, <span class="st">"Spatial CV"</span> <span class="ot">=</span> <span class="st">"darkorange"</span>)) <span class="sc">+</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="st">"Cross-validated R2"</span>, <span class="at">fill =</span> <span class="cn">NULL</span>, <span class="at">title =</span> <span class="st">"Random CV hides what spatial CV reveals"</span>) <span class="sc">+</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>p_sets</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="st">"Output/FigS6_predictor_sets_CV.pdf"</span>, p_sets, <span class="at">width =</span> <span class="dv">10</span>, <span class="at">height =</span> <span class="dv">5</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Path of the spatial pruning</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">nrow</span>(pruning_path) <span class="sc">&gt;</span> <span class="dv">1</span>) {</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(pruning_path, <span class="fu">aes</span>(<span class="at">x =</span> step, <span class="at">y =</span> RMSE)) <span class="sc">+</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>() <span class="sc">+</span> <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> removed), <span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.8</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Pruning step"</span>, <span class="at">y =</span> <span class="st">"Spatial-CV RMSE"</span>, <span class="at">title =</span> <span class="st">"Spatial pruning of the VSURF variables"</span>) <span class="sc">+</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_minimal</span>()</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/cv-predictor-sets.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Random CV barely changes between predictor sets (0.75–0.76); spatial CV separates them (0.57–0.71)"><img src="images/cv-predictor-sets.png" class="img-fluid figure-img" style="width:85.0%" alt="Random CV barely changes between predictor sets (0.75–0.76); spatial CV separates them (0.57–0.71)"></a></p>
-<figcaption>Random CV barely changes between predictor sets (0.75–0.76); spatial CV separates them (0.57–0.71)</figcaption>
+<p><a href="images/figS6-predictor-sets.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Output of Step 4.5 (Fig. S6): random CV barely changes between predictor sets (0.75–0.79); spatial CV separates them (0.54–0.70)"><img src="images/figS6-predictor-sets.png" class="img-fluid figure-img" style="width:90.0%" alt="Output of Step 4.5 (Fig. S6): random CV barely changes between predictor sets (0.75–0.79); spatial CV separates them (0.54–0.70)"></a></p>
+<figcaption>Output of Step 4.5 (Fig. S6): random CV barely changes between predictor sets (0.75–0.79); spatial CV separates them (0.54–0.70)</figcaption>
 </figure>
 </div>
 </section>
@@ -643,146 +656,150 @@ This step takes ~8 minutes
 <li>The model is trained with <code>quantreg = TRUE</code> (quantile regression forest, Meinshausen 2006). The <strong>same model</strong> gives the mean isoscape and its uncertainty in <a href="./06-isoscape.html">Section 6</a>.</li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Spatial-block cross-validation: one spatial cluster is left out at a time</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># index    = for each fold, the rows used for training (all the other blocks)</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># indexOut = for each fold, the rows used for testing (the block left out)</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>blocks <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(spatial_folds))</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>fitControl_spatial <span class="ot">&lt;-</span> <span class="fu">trainControl</span>(</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>   <span class="at">method =</span> <span class="st">"cv"</span>,</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>   <span class="at">index    =</span> <span class="fu">lapply</span>(blocks, <span class="cf">function</span>(k) <span class="fu">which</span>(spatial_folds <span class="sc">!=</span> k)),</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>   <span class="at">indexOut =</span> <span class="fu">lapply</span>(blocks, <span class="cf">function</span>(k) <span class="fu">which</span>(spatial_folds <span class="sc">==</span> k)),</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>   <span class="at">savePredictions =</span> <span class="st">"final"</span>,</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>   <span class="at">verboseIter =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>   <span class="at">allowParallel =</span> <span class="cn">FALSE</span>)   <span class="co"># ranger is already multi-threaded</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Tuning grid: mtry and min.node.size (splitrule fixed to "variance" for regression)</span></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>n_pred <span class="ot">&lt;-</span> <span class="fu">length</span>(vars_final)</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>tunegrid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">mtry =</span> <span class="fu">unique</span>(<span class="fu">pmax</span>(<span class="dv">1</span>, <span class="fu">round</span>(n_pred <span class="sc">*</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.33</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)))),</span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>                        <span class="at">splitrule =</span> <span class="st">"variance"</span>,</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>                        <span class="at">min.node.size =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>))</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>RF_all <span class="ot">&lt;-</span> <span class="fu">train</span>(X87Sr86Sr <span class="sc">~</span> ., <span class="at">data =</span> training_rf,</span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>                <span class="at">method =</span> <span class="st">"ranger"</span>, <span class="at">metric =</span> <span class="st">"RMSE"</span>,</span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>                <span class="at">tuneGrid =</span> tunegrid, <span class="at">trControl =</span> fitControl_spatial,</span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>                <span class="at">num.trees =</span> <span class="dv">500</span>, <span class="at">quantreg =</span> <span class="cn">TRUE</span>, <span class="at">importance =</span> <span class="st">"permutation"</span>, <span class="at">seed =</span> <span class="dv">1</span>)</span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(RF_all, <span class="at">file =</span> <span class="st">"Output/RF_all"</span>)</span>
-<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Note: in this table, Rsquared is the mean of the R2 computed within each spatial</span></span>
-<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="co"># block. It is low because each block covers a small range of 87Sr/86Sr. The</span></span>
-<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="co"># tuning uses RMSE; the pooled R2 of all out-of-block predictions is computed below.</span></span>
-<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="co"># The spatial blocks have different sizes (one contains most of the Cape sites).</span></span>
-<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>RF_all</span>
-<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>RF_all<span class="sc">$</span>bestTune</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Spatial-block cross-validation: one spatial cluster is left out at a time</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># index    = for each fold, the rows used for training (all the other blocks)</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># indexOut = for each fold, the rows used for testing (the block left out)</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>blocks <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(spatial_folds))</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>fitControl_spatial <span class="ot">&lt;-</span> <span class="fu">trainControl</span>(</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>   <span class="at">method =</span> <span class="st">"cv"</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>   <span class="at">index    =</span> <span class="fu">lapply</span>(blocks, <span class="cf">function</span>(k) <span class="fu">which</span>(spatial_folds <span class="sc">!=</span> k)),</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>   <span class="at">indexOut =</span> <span class="fu">lapply</span>(blocks, <span class="cf">function</span>(k) <span class="fu">which</span>(spatial_folds <span class="sc">==</span> k)),</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>   <span class="at">savePredictions =</span> <span class="st">"final"</span>,</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>   <span class="at">verboseIter =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>   <span class="at">allowParallel =</span> <span class="cn">FALSE</span>)   <span class="co"># ranger is already multi-threaded</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Tuning grid: mtry and min.node.size (splitrule fixed to "variance" for regression)</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>n_pred <span class="ot">&lt;-</span> <span class="fu">length</span>(vars_final)</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>tunegrid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">mtry =</span> <span class="fu">unique</span>(<span class="fu">pmax</span>(<span class="dv">1</span>, <span class="fu">round</span>(n_pred <span class="sc">*</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.33</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>)))),</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>                        <span class="at">splitrule =</span> <span class="st">"variance"</span>,</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>                        <span class="at">min.node.size =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>))</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>RF_all <span class="ot">&lt;-</span> <span class="fu">train</span>(X87Sr86Sr <span class="sc">~</span> ., <span class="at">data =</span> training_rf,</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>                <span class="at">method =</span> <span class="st">"ranger"</span>, <span class="at">metric =</span> <span class="st">"RMSE"</span>,</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>                <span class="at">tuneGrid =</span> tunegrid, <span class="at">trControl =</span> fitControl_spatial,</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>                <span class="at">num.trees =</span> <span class="dv">500</span>, <span class="at">quantreg =</span> <span class="cn">TRUE</span>, <span class="at">importance =</span> <span class="st">"permutation"</span>, <span class="at">seed =</span> <span class="dv">1</span>)</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(RF_all, <span class="at">file =</span> <span class="st">"Output/RF_all"</span>)</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Note: in this table, Rsquared is the mean of the R2 computed within each spatial</span></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a><span class="co"># block. It is low because each block covers a small range of 87Sr/86Sr. The</span></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="co"># tuning uses RMSE; the pooled R2 of all out-of-block predictions is computed below.</span></span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a><span class="co"># The spatial blocks have different sizes (one contains most of the Cape sites).</span></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>RF_all</span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>RF_all<span class="sc">$</span>bestTune</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>For comparison, the classic random repeated 10-fold cross-validation with the same hyperparameters:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Classic random repeated 10-fold cross-validation with the same hyperparameters (for comparison)</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>fitControl_random <span class="ot">&lt;-</span> <span class="fu">trainControl</span>(</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>   <span class="at">method =</span> <span class="st">"repeatedcv"</span>,  <span class="co"># 10-fold Crossvalidation</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>   <span class="at">number =</span> <span class="dv">10</span>,</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>   <span class="at">repeats =</span> <span class="dv">5</span>,            <span class="co"># Repeated five times</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>   <span class="at">savePredictions =</span> <span class="st">"final"</span>,</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>   <span class="at">allowParallel =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>RF_random <span class="ot">&lt;-</span> <span class="fu">train</span>(X87Sr86Sr <span class="sc">~</span> ., <span class="at">data =</span> training_rf,</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>                   <span class="at">method =</span> <span class="st">"ranger"</span>, <span class="at">metric =</span> <span class="st">"RMSE"</span>,</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>                   <span class="at">tuneGrid =</span> RF_all<span class="sc">$</span>bestTune, <span class="at">trControl =</span> fitControl_random,</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>                   <span class="at">num.trees =</span> <span class="dv">500</span>, <span class="at">seed =</span> <span class="dv">1</span>)</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>cv_compare <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">Random_CV  =</span> <span class="fu">postResample</span>(RF_random<span class="sc">$</span>pred<span class="sc">$</span>pred, RF_random<span class="sc">$</span>pred<span class="sc">$</span>obs),</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">Spatial_CV =</span> <span class="fu">postResample</span>(RF_all<span class="sc">$</span>pred<span class="sc">$</span>pred, RF_all<span class="sc">$</span>pred<span class="sc">$</span>obs))</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>cv_compare</span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(cv_compare, <span class="st">"Output/cross_validation_random_vs_spatial.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Classic random repeated 10-fold cross-validation with the same hyperparameters (for comparison)</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>fitControl_random <span class="ot">&lt;-</span> <span class="fu">trainControl</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>   <span class="at">method =</span> <span class="st">"repeatedcv"</span>,  <span class="co"># 10-fold Crossvalidation</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>   <span class="at">number =</span> <span class="dv">10</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>   <span class="at">repeats =</span> <span class="dv">5</span>,            <span class="co"># Repeated five times</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>   <span class="at">savePredictions =</span> <span class="st">"final"</span>,</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>   <span class="at">allowParallel =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>RF_random <span class="ot">&lt;-</span> <span class="fu">train</span>(X87Sr86Sr <span class="sc">~</span> ., <span class="at">data =</span> training_rf,</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>                   <span class="at">method =</span> <span class="st">"ranger"</span>, <span class="at">metric =</span> <span class="st">"RMSE"</span>,</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>                   <span class="at">tuneGrid =</span> RF_all<span class="sc">$</span>bestTune, <span class="at">trControl =</span> fitControl_random,</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>                   <span class="at">num.trees =</span> <span class="dv">500</span>, <span class="at">seed =</span> <span class="dv">1</span>)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>cv_compare <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">Random_CV  =</span> <span class="fu">postResample</span>(RF_random<span class="sc">$</span>pred<span class="sc">$</span>pred, RF_random<span class="sc">$</span>pred<span class="sc">$</span>obs),</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">Spatial_CV =</span> <span class="fu">postResample</span>(RF_all<span class="sc">$</span>pred<span class="sc">$</span>pred, RF_all<span class="sc">$</span>pred<span class="sc">$</span>obs))</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>cv_compare</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(cv_compare, <span class="st">"Output/cross_validation_random_vs_spatial.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p><em>What you should see:</em></p>
+<pre><code>##                   RMSE  Rsquared         MAE
+## Random_CV  0.003947601 0.7706560 0.002069309
+## Spatial_CV 0.004834838 0.6633814 0.002958629</code></pre>
 </section>
 <section id="step-4.7-plot-the-cross-validation-results" class="level2">
 <h2 class="anchored" data-anchor-id="step-4.7-plot-the-cross-validation-results">Step 4.7: Plot the cross-validation results</h2>
 <div class="cell">
 <details class="code-fold">
 <summary>Show the plotting code</summary>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>cv_pred <span class="ot">&lt;-</span> <span class="fu">rbind</span>(<span class="fu">data.frame</span>(RF_random<span class="sc">$</span>pred[, <span class="fu">c</span>(<span class="st">"obs"</span>, <span class="st">"pred"</span>)], <span class="at">CV =</span> <span class="st">"Random 10-fold CV (repeated 5 times)"</span>),</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">data.frame</span>(RF_all<span class="sc">$</span>pred[, <span class="fu">c</span>(<span class="st">"obs"</span>, <span class="st">"pred"</span>)],    <span class="at">CV =</span> <span class="st">"Spatial-block 10-fold CV"</span>))</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Axis limits adapted to the South African 87Sr/86Sr range</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>sr_lim <span class="ot">&lt;-</span> <span class="fu">range</span>(<span class="fu">c</span>(cv_pred<span class="sc">$</span>obs, cv_pred<span class="sc">$</span>pred))</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(cv_pred, <span class="fu">aes</span>(<span class="at">x =</span> obs, <span class="at">y =</span> pred)) <span class="sc">+</span></span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_bin_2d</span>(<span class="at">binwidth =</span> <span class="fl">0.001</span>) <span class="sc">+</span></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_abline</span>(<span class="at">slope =</span> <span class="dv">1</span>, <span class="at">intercept =</span> <span class="dv">0</span>, <span class="at">linetype =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">colour =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_viridis_c</span>(<span class="at">option =</span> <span class="st">"magma"</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">trans =</span> <span class="st">"sqrt"</span>) <span class="sc">+</span></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">coord_cartesian</span>(<span class="at">xlim =</span> sr_lim, <span class="at">ylim =</span> sr_lim) <span class="sc">+</span></span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_wrap</span>(<span class="sc">~</span> CV) <span class="sc">+</span></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">fill =</span> <span class="st">"Count"</span>) <span class="sc">+</span></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"87Sr/86Srobs"</span>) <span class="sc">+</span></span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ylab</span>(<span class="st">"87Sr/86Srmod"</span>)</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(cv_pred, <span class="fu">aes</span>(<span class="at">x =</span> obs, <span class="at">y =</span> pred <span class="sc">-</span> obs)) <span class="sc">+</span></span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_bin_2d</span>(<span class="at">binwidth =</span> <span class="fl">0.001</span>, <span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_viridis_c</span>(<span class="at">option =</span> <span class="st">"magma"</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">trans =</span> <span class="st">"sqrt"</span>) <span class="sc">+</span></span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_wrap</span>(<span class="sc">~</span> CV) <span class="sc">+</span></span>
-<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"87Sr/86Srobs"</span>) <span class="sc">+</span></span>
-<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ylab</span>(<span class="st">"Residuals"</span>)</span>
-<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>p3 <span class="ot">&lt;-</span> p1 <span class="sc">/</span> p2 <span class="sc">+</span> <span class="fu">plot_annotation</span>(</span>
-<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Model performance: random vs. spatial cross-validation"</span></span>
-<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>p3</span>
-<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="st">"Output/FigS2.pdf"</span>, p3, <span class="at">width =</span> <span class="dv">14</span>, <span class="at">height =</span> <span class="dv">12</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>cv_pred <span class="ot">&lt;-</span> <span class="fu">rbind</span>(<span class="fu">data.frame</span>(RF_random<span class="sc">$</span>pred[, <span class="fu">c</span>(<span class="st">"obs"</span>, <span class="st">"pred"</span>)], <span class="at">CV =</span> <span class="st">"Random 10-fold CV (repeated 5 times)"</span>),</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">data.frame</span>(RF_all<span class="sc">$</span>pred[, <span class="fu">c</span>(<span class="st">"obs"</span>, <span class="st">"pred"</span>)],    <span class="at">CV =</span> <span class="st">"Spatial-block 10-fold CV"</span>))</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Axis limits adapted to the South African 87Sr/86Sr range</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>sr_lim <span class="ot">&lt;-</span> <span class="fu">range</span>(<span class="fu">c</span>(cv_pred<span class="sc">$</span>obs, cv_pred<span class="sc">$</span>pred))</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(cv_pred, <span class="fu">aes</span>(<span class="at">x =</span> obs, <span class="at">y =</span> pred)) <span class="sc">+</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_bin_2d</span>(<span class="at">binwidth =</span> <span class="fl">0.001</span>) <span class="sc">+</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_abline</span>(<span class="at">slope =</span> <span class="dv">1</span>, <span class="at">intercept =</span> <span class="dv">0</span>, <span class="at">linetype =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">colour =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_viridis_c</span>(<span class="at">option =</span> <span class="st">"magma"</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">trans =</span> <span class="st">"sqrt"</span>) <span class="sc">+</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">coord_cartesian</span>(<span class="at">xlim =</span> sr_lim, <span class="at">ylim =</span> sr_lim) <span class="sc">+</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_wrap</span>(<span class="sc">~</span> CV) <span class="sc">+</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">fill =</span> <span class="st">"Count"</span>) <span class="sc">+</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"87Sr/86Srobs"</span>) <span class="sc">+</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ylab</span>(<span class="st">"87Sr/86Srmod"</span>)</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(cv_pred, <span class="fu">aes</span>(<span class="at">x =</span> obs, <span class="at">y =</span> pred <span class="sc">-</span> obs)) <span class="sc">+</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_bin_2d</span>(<span class="at">binwidth =</span> <span class="fl">0.001</span>, <span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_viridis_c</span>(<span class="at">option =</span> <span class="st">"magma"</span>, <span class="at">direction =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">trans =</span> <span class="st">"sqrt"</span>) <span class="sc">+</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_wrap</span>(<span class="sc">~</span> CV) <span class="sc">+</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">xlab</span>(<span class="st">"87Sr/86Srobs"</span>) <span class="sc">+</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ylab</span>(<span class="st">"Residuals"</span>)</span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>p3 <span class="ot">&lt;-</span> p1 <span class="sc">/</span> p2 <span class="sc">+</span> <span class="fu">plot_annotation</span>(</span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Model performance: random vs. spatial cross-validation"</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>p3</span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="st">"Output/FigS2.pdf"</span>, p3, <span class="at">width =</span> <span class="dv">14</span>, <span class="at">height =</span> <span class="dv">12</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/cv-obs-pred.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Same model, same data: R² = 0.77 with random CV, 0.71 with spatial CV"><img src="images/cv-obs-pred.png" class="img-fluid figure-img" alt="Same model, same data: R² = 0.77 with random CV, 0.71 with spatial CV"></a></p>
-<figcaption>Same model, same data: R² = 0.77 with random CV, 0.71 with spatial CV</figcaption>
+<p><a href="images/figS2-obs-pred.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Output of Step 4.7 (Fig. S2): same model, same data: R² = 0.77 with random CV, 0.66 with spatial CV"><img src="images/figS2-obs-pred.png" class="img-fluid figure-img" style="width:85.0%" alt="Output of Step 4.7 (Fig. S2): same model, same data: R² = 0.77 with random CV, 0.66 with spatial CV"></a></p>
+<figcaption>Output of Step 4.7 (Fig. S2): same model, same data: R² = 0.77 with random CV, 0.66 with spatial CV</figcaption>
 </figure>
 </div>
 <p>Where are the large errors of the spatial cross-validation?</p>
 <div class="cell">
 <details class="code-fold">
 <summary>Show the code</summary>
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Map of the spatial-CV residuals (observed - predicted) at each site</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>res_sp <span class="ot">&lt;-</span> RF_all<span class="sc">$</span>pred[<span class="fu">order</span>(RF_all<span class="sc">$</span>pred<span class="sc">$</span>rowIndex), ]</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>sites_sf<span class="sc">$</span>resid_spatial <span class="ot">&lt;-</span> res_sp<span class="sc">$</span>obs <span class="sc">-</span> res_sp<span class="sc">$</span>pred</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>p_res <span class="ot">&lt;-</span> <span class="fu">ggplot</span>() <span class="sc">+</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> za_p, <span class="at">fill =</span> <span class="st">"grey95"</span>, <span class="at">colour =</span> <span class="st">"grey60"</span>) <span class="sc">+</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> sites_sf[<span class="fu">order</span>(<span class="fu">abs</span>(sites_sf<span class="sc">$</span>resid_spatial)), ], <span class="fu">aes</span>(<span class="at">colour =</span> resid_spatial), <span class="at">size =</span> <span class="fl">1.5</span>) <span class="sc">+</span></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_gradient2</span>(<span class="at">low =</span> <span class="st">"blue"</span>, <span class="at">mid =</span> <span class="st">"grey90"</span>, <span class="at">high =</span> <span class="st">"red"</span>, <span class="at">midpoint =</span> <span class="dv">0</span>,</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>                         <span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.015</span>, <span class="fl">0.015</span>), <span class="at">oob =</span> scales<span class="sc">::</span>squish, <span class="at">name =</span> <span class="st">"obs - pred"</span>) <span class="sc">+</span></span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_sf</span>(<span class="at">xlim =</span> <span class="fu">range</span>(sr_agg<span class="sc">$</span>X) <span class="sc">+</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">1e5</span>, <span class="fl">1e5</span>), <span class="at">ylim =</span> <span class="fu">range</span>(sr_agg<span class="sc">$</span>Y) <span class="sc">+</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">1e5</span>, <span class="fl">1e5</span>)) <span class="sc">+</span></span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Spatial-CV residuals"</span>) <span class="sc">+</span></span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>p_res</span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="st">"Output/FigS7_residual_map.pdf"</span>, p_res, <span class="at">width =</span> <span class="dv">8</span>, <span class="at">height =</span> <span class="dv">7</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Map of the spatial-CV residuals (observed - predicted) at each site</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>res_sp <span class="ot">&lt;-</span> RF_all<span class="sc">$</span>pred[<span class="fu">order</span>(RF_all<span class="sc">$</span>pred<span class="sc">$</span>rowIndex), ]</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>sites_sf<span class="sc">$</span>resid_spatial <span class="ot">&lt;-</span> res_sp<span class="sc">$</span>obs <span class="sc">-</span> res_sp<span class="sc">$</span>pred</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>p_res <span class="ot">&lt;-</span> <span class="fu">ggplot</span>() <span class="sc">+</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> za_p, <span class="at">fill =</span> <span class="st">"grey95"</span>, <span class="at">colour =</span> <span class="st">"grey60"</span>) <span class="sc">+</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_sf</span>(<span class="at">data =</span> sites_sf[<span class="fu">order</span>(<span class="fu">abs</span>(sites_sf<span class="sc">$</span>resid_spatial)), ], <span class="fu">aes</span>(<span class="at">colour =</span> resid_spatial), <span class="at">size =</span> <span class="fl">1.5</span>) <span class="sc">+</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_gradient2</span>(<span class="at">low =</span> <span class="st">"blue"</span>, <span class="at">mid =</span> <span class="st">"grey90"</span>, <span class="at">high =</span> <span class="st">"red"</span>, <span class="at">midpoint =</span> <span class="dv">0</span>,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>                         <span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.015</span>, <span class="fl">0.015</span>), <span class="at">oob =</span> scales<span class="sc">::</span>squish, <span class="at">name =</span> <span class="st">"obs - pred"</span>) <span class="sc">+</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_sf</span>(<span class="at">xlim =</span> <span class="fu">range</span>(sr_agg<span class="sc">$</span>X) <span class="sc">+</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">1e5</span>, <span class="fl">1e5</span>), <span class="at">ylim =</span> <span class="fu">range</span>(sr_agg<span class="sc">$</span>Y) <span class="sc">+</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">1e5</span>, <span class="fl">1e5</span>)) <span class="sc">+</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="st">"Spatial-CV residuals"</span>) <span class="sc">+</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>p_res</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="st">"Output/FigS7_residual_map.pdf"</span>, p_res, <span class="at">width =</span> <span class="dv">8</span>, <span class="at">height =</span> <span class="dv">7</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/cv-residual-map.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Spatial-CV residuals (observed − predicted) at each site"><img src="images/cv-residual-map.png" class="img-fluid figure-img" style="width:60.0%" alt="Spatial-CV residuals (observed − predicted) at each site"></a></p>
-<figcaption>Spatial-CV residuals (observed − predicted) at each site</figcaption>
+<p><a href="images/figS7-residual-map.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Output of Step 4.7 (Fig. S7): spatial-CV residuals (observed − predicted) at each site"><img src="images/figS7-residual-map.png" class="img-fluid figure-img" style="width:65.0%" alt="Output of Step 4.7 (Fig. S7): spatial-CV residuals (observed − predicted) at each site"></a></p>
+<figcaption>Output of Step 4.7 (Fig. S7): spatial-CV residuals (observed − predicted) at each site</figcaption>
 </figure>
 </div>
 <section id="think-pair-share-random-vs.-spatial-cv" class="level3 think-pair-share">
 <h3 class="anchored" data-anchor-id="think-pair-share-random-vs.-spatial-cv">Think · Pair · Share: random vs.&nbsp;spatial CV</h3>
-<p>Same model, same data: random CV R² = 0.77 (RMSE 0.0040), spatial-block CV R² = 0.71 (RMSE 0.0045). <strong>Which one would you report in a paper, and why?</strong></p>
+<p>Same model, same data: random CV R² = 0.77 (RMSE 0.0039), spatial-block CV R² = 0.66 (RMSE 0.0048). <strong>Which one would you report in a paper, and why?</strong></p>
 <div class="tps-steps">
 <div class="tps-step">
 <p><strong>💭 Think</strong> <span class="tps-time">1 min</span></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>cv_compare</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>cv_compare</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>On your own, compare the fold maps and the distance plot: test sites sit 6 km (random) vs.&nbsp;84 km (spatial) from the training data, and map pixels sit 84 km away.</p>
+<p>On your own, compare the fold maps and the distance plot: test sites sit ~6 km (random) vs.&nbsp;~81 km (spatial) from the training data, and map pixels sit ~84 km away.</p>
 </div>
 <div class="tps-step">
 <p><strong>🤝 Pair</strong> <span class="tps-time">3 min</span></p>
 <p>With your neighbour:</p>
 <ul>
-<li>Random CV barely changes between predictor sets; spatial CV separates them. What does that tell you about OOB error and VSURF?</li>
+<li>Random CV barely changes between predictor sets (0.75–0.79); spatial CV separates them (0.54–0.70). What does that tell you about OOB error and VSURF?</li>
 <li>What are the weaknesses of spatial CV?</li>
 </ul>
 </div>
@@ -857,6 +874,22 @@ Things you might have noticed
 </ol>
 </div>
 </div>
+<div class="callout callout-style-default callout-caution callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-7-contents" aria-controls="callout-7" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Things to look for
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-7" class="callout-7-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>In our run, the prediction step keeps <strong>9</strong> variables, and its spatial R² (0.70) is <em>higher</em> than with the 16 interpretation variables (0.66) (Fig. S6). Fewer, less redundant predictors can transfer better to new regions. Which of the coarse layers survive?</p>
+</div>
+</div>
+</div>
 </section>
 <section id="exercise-2-pruning-tolerance" class="level3">
 <h3 class="anchored" data-anchor-id="exercise-2-pruning-tolerance">Exercise 2: pruning tolerance</h3>
@@ -878,7 +911,7 @@ Things you might have noticed
 </div>
 </div>
 <div class="callout callout-style-default callout-caution callout-titled">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-8-contents" aria-controls="callout-8" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-9-contents" aria-controls="callout-9" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -887,7 +920,7 @@ Hint
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-8" class="callout-8-contents callout-collapse collapse">
+<div id="callout-9" class="callout-9-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>Look at <code>pruning_path</code> after each run: it lists which variable was removed at each step and the spatial-CV RMSE.</p>
 </div>
@@ -914,7 +947,7 @@ Hint
 </div>
 </div>
 <div class="callout callout-style-default callout-caution callout-titled">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-10-contents" aria-controls="callout-10" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-11-contents" aria-controls="callout-11" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
@@ -923,7 +956,7 @@ Things to look for
 </div>
 <div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
 </div>
-<div id="callout-10" class="callout-10-contents callout-collapse collapse">
+<div id="callout-11" class="callout-11-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <p>Fewer, larger blocks push the test sites further from the training data, so the spatial R² usually drops. More, smaller blocks bring the CV distances closer to the random CV. The best design is the one whose distances look most like the map’s.</p>
 </div>
@@ -946,7 +979,7 @@ Key takeaways
 <ul>
 <li>Random CV measures interpolation between nearby sites; spatial CV measures prediction in new regions.</li>
 <li>OOB error and VSURF behave like random CV, so we prune and tune with spatial CV.</li>
-<li>The final model keeps seven predictors, with R² = 0.71 in spatial CV.</li>
+<li>The final model keeps 16 predictors, with R² = 0.66 in spatial CV (0.77 in random CV).</li>
 </ul>
 </div>
 </div>

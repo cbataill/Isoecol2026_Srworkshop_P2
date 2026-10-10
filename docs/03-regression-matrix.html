@@ -76,6 +76,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="site_libs/bootstrap/bootstrap-333addd1bd3a146788b4b69de38e3784.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -281,7 +284,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">October 9, 2026</p>
+      <p class="date-modified">October 10, 2026</p>
     </div>
   </div>
     
@@ -466,6 +469,23 @@ Sites on a nodata pixel
 <span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Save table on directory</span></span>
 <span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(sr_agg,<span class="st">"Output/sr_agg_all.txt"</span>,<span class="at">sep =</span> <span class="st">"</span><span class="sc">\t</span><span class="st">"</span>,<span class="at">col.names =</span> T, <span class="at">row.names =</span> F, <span class="at">quote =</span> F)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/step3-corrplot.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Output of Step 3.6: correlation matrix of the 64 candidate covariates (blue = positive, red = negative)"><img src="images/step3-corrplot.png" class="img-fluid figure-img" style="width:100.0%" alt="Output of Step 3.6: correlation matrix of the 64 candidate covariates (blue = positive, red = negative)"></a></p>
+<figcaption>Output of Step 3.6: correlation matrix of the 64 candidate covariates (blue = positive, red = negative)</figcaption>
+</figure>
+</div>
+<p><em>What you should see:</em></p>
+<pre><code>## high_cor
+##  [1] "r.ph"               "r.map"              "r.africa.Fe.0"
+##  [4] "r.biogenic"         "r.biofuels"         "r.fire"
+##  [7] "r.africa.Al.20"     "r.meanage_geol.f10" "r.meanage_geol.f05"
+## [10] "r.africa.sand.20"   "r.africa.S.0"       "r.meanage_geol.f25"
+## [13] "r.africa.Zn.0"      "r.minage_geol"      "r.maxage_geol"
+## [16] "r.srsrq1.f10"       "r.africa.Ca.20"     "r.africa.K.20"
+## [19] "r.africa.Mg.0"      "r.africa.silt.0"    "r.africa.P.0"
+## [22] "r.africa.eCEC.0"</code></pre>
+<p>22 of the 64 candidates are removed, leaving <strong>42 covariates</strong> for VSURF.</p>
 <section id="think-pair-share-correlated-covariates" class="level3 think-pair-share">
 <h3 class="anchored" data-anchor-id="think-pair-share-correlated-covariates">Think · Pair · Share: correlated covariates</h3>
 <p>Many covariates carry the same information: bedrock Sr at 1, 5, 10 and 25 km; rainfall, aridity and PET; Ca at 0–20 and 20–50 cm… <strong>What does collinearity do to a random forest, and how do we deal with it?</strong></p>
@@ -481,7 +501,7 @@ Sites on a nodata pixel
 <div class="tps-step">
 <p><strong>🤝 Pair</strong> <span class="tps-time">3 min</span></p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>high_cor</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>high_cor</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>With your neighbour:</p>
 <ul>
@@ -511,6 +531,12 @@ Things you might have noticed
 </div>
 <div id="callout-4" class="callout-4-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
+<p><strong>🔗 The strongest pairs in our data</strong></p>
+<ul>
+<li>Same source dataset: <code>r.meanage_geol</code> / <code>r.minage_geol</code> / <code>r.maxage_geol</code> (r = 1.00); <code>r.africa.Ca.0</code> / <code>r.africa.Ca.20</code> (1.00) and the other iSDA depth pairs (0.97–1.00); <code>r.fire</code> / <code>r.biofuels</code> / <code>r.biogenic</code> (0.99), all from the same aerosol model.</li>
+<li>Same process at different scales: <code>r.srsrq1.f05</code> / <code>r.srsrq1.f10</code> (0.96), <code>r.srsrq1.f10</code> / <code>r.srsrq1.f25</code> (0.92).</li>
+<li>Shared climate gradient: <code>r.map</code> / <code>r.ai</code> (0.95), <code>r.map</code> / <code>r.ph</code> (−0.91), since wetter soils are more leached and acidic.</li>
+</ul>
 <p><strong>🌲 What collinearity does to a random forest</strong></p>
 <ul>
 <li><strong>Predictions:</strong> little effect. Each split simply uses whichever correlated variable is drawn (<code>mtry</code>).</li>
@@ -520,7 +546,7 @@ Things you might have noticed
 </ul>
 <p><strong>🛠️ What the script does</strong></p>
 <ul>
-<li><code>findCorrelation()</code>: for each pair with |r| &gt; 0.9, drop the variable with the highest mean correlation → 39 candidates.</li>
+<li><code>findCorrelation()</code>: for each pair with |r| &gt; 0.9, drop the variable with the highest mean correlation: 64 → 42 candidates.</li>
 <li>VSURF (<a href="./04-cross-validation.html#step-4.3-predictor-selection-with-vsurf">Step 4.3</a>): the thresholding step removes noise; the prediction step removes redundancy.</li>
 <li>Spatial pruning (<a href="./04-cross-validation.html#step-4.4-spatial-pruning-of-the-predictors">Step 4.4</a>): drop variables that worsen the spatial-CV RMSE by &gt; 2%.</li>
 </ul>
@@ -1007,6 +1033,38 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 </div>
   </div>
 </footer>
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
 
 
 

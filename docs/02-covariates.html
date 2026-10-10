@@ -286,7 +286,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">October 9, 2026</p>
+      <p class="date-modified">October 10, 2026</p>
     </div>
   </div>
     
@@ -580,8 +580,8 @@ Coarse layers
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/neighbourhood-geology.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Bedrock ⁸⁷Sr/⁸⁶Sr at the pixel scale and averaged within 5, 10 and 25 km"><img src="images/neighbourhood-geology.png" class="img-fluid figure-img" alt="Bedrock ⁸⁷Sr/⁸⁶Sr at the pixel scale and averaged within 5, 10 and 25 km"></a></p>
-<figcaption>Bedrock ⁸⁷Sr/⁸⁶Sr at the pixel scale and averaged within 5, 10 and 25 km</figcaption>
+<p><a href="images/step2-focal.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Output of Step 2.8: bedrock ⁸⁷Sr/⁸⁶Sr at the pixel scale and averaged within 5, 10 and 25 km"><img src="images/step2-focal.png" class="img-fluid figure-img" alt="Output of Step 2.8: bedrock ⁸⁷Sr/⁸⁶Sr at the pixel scale and averaged within 5, 10 and 25 km"></a></p>
+<figcaption>Output of Step 2.8: bedrock ⁸⁷Sr/⁸⁶Sr at the pixel scale and averaged within 5, 10 and 25 km</figcaption>
 </figure>
 </div>
 <div class="callout callout-style-default callout-tip callout-titled">
@@ -631,6 +631,12 @@ Why stop at 25 km?
 <span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Have a look at some of them</span></span>
 <span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(stack_all[[<span class="fu">c</span>(<span class="st">"r.srsrq1"</span>, <span class="st">"r.meanage_geol"</span>, <span class="st">"r.distance"</span>, <span class="st">"r.map"</span>, <span class="st">"r.dust"</span>, <span class="st">"r.africa.Ca.0"</span>)]])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="images/step2-covariates.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Output of Step 2.9: six of the covariates"><img src="images/step2-covariates.png" class="img-fluid figure-img" alt="Output of Step 2.9: six of the covariates"></a></p>
+<figcaption>Output of Step 2.9: six of the covariates</figcaption>
+</figure>
 </div>
 <section id="think-pair-share-covariates-for-south-africa" class="level3 think-pair-share">
 <h3 class="anchored" data-anchor-id="think-pair-share-covariates-for-south-africa">Think · Pair · Share: covariates for South Africa</h3>
@@ -690,7 +696,8 @@ Things you might have noticed
 <ul>
 <li>Categorical maps with hundreds of classes: most classes contain no training site, so they are dropped in <a href="./03-regression-matrix.html#step-3.5-choose-the-candidate-covariates">Step 3.5</a>.</li>
 <li>The coarse aerosol models (~1–2°) behave like coordinates inside one country.</li>
-<li><code>r.africa.Ca.0</code> made it into the final model; the categorical maps did not.</li>
+<li>Four iSDA layers made it into the final model (<code>r.africa.Ca.0</code>, <code>r.africa.Fe.20</code>, <code>r.africa.S.20</code>, <code>r.africa.K.0</code>); the categorical maps did not.</li>
+<li>With <code>candidate_set &lt;- "all"</code>, four coarse layers (<code>r.salt</code>, <code>r.dust</code>, <code>r.volc</code>, <code>r.foss</code>) also made it in. Are they real processes or proxies for location? Compare with <code>"no_coarse"</code> (<a href="./03-regression-matrix.html#step-3.5-choose-the-candidate-covariates">Step 3.5</a>).</li>
 </ul>
 <p><strong>🧰 For your own isoscape</strong></p>
 <ul>

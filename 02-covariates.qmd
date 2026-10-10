@@ -256,7 +256,7 @@ focal_names
 plot(c(r.srsrq1, r.srsrq1.f05, r.srsrq1.f10, r.srsrq1.f25), nc = 4)
 ```
 
-![Bedrock ⁸⁷Sr/⁸⁶Sr at the pixel scale and averaged within 5, 10 and 25 km](images/neighbourhood-geology.png)
+![Output of Step 2.8: bedrock ⁸⁷Sr/⁸⁶Sr at the pixel scale and averaged within 5, 10 and 25 km](images/step2-focal.png)
 
 ::: callout-tip
 ## Why stop at 25 km?
@@ -300,6 +300,8 @@ for (p in c("r.geomap", "r.vegmap")) levels(stack_all[[p]]) <- NULL
 # Have a look at some of them
 plot(stack_all[[c("r.srsrq1", "r.meanage_geol", "r.distance", "r.map", "r.dust", "r.africa.Ca.0")]])
 ```
+
+![Output of Step 2.9: six of the covariates](images/step2-covariates.png)
 
 ::::::: think-pair-share
 ### Think · Pair · Share: covariates for South Africa
@@ -358,7 +360,8 @@ Think about your own isoscape:
 
 -   Categorical maps with hundreds of classes: most classes contain no training site, so they are dropped in [Step 3.5](03-regression-matrix.qmd#step-3.5-choose-the-candidate-covariates).
 -   The coarse aerosol models (~1–2°) behave like coordinates inside one country.
--   `r.africa.Ca.0` made it into the final model; the categorical maps did not.
+-   Four iSDA layers made it into the final model (`r.africa.Ca.0`, `r.africa.Fe.20`, `r.africa.S.20`, `r.africa.K.0`); the categorical maps did not.
+-   With `candidate_set <- "all"`, four coarse layers (`r.salt`, `r.dust`, `r.volc`, `r.foss`) also made it in. Are they real processes or proxies for location? Compare with `"no_coarse"` ([Step 3.5](03-regression-matrix.qmd#step-3.5-choose-the-candidate-covariates)).
 
 **🧰 For your own isoscape**
 

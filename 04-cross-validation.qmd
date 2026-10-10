@@ -68,7 +68,9 @@ plot(st_geometry(za_p), main = "Spatial-block 10-fold CV", border = "grey50")
 points(sr_agg$X, sr_agg$Y, col = rainbow(10)[spatial_folds], pch = 16, cex = 0.6)
 ```
 
-![Random folds are mixed everywhere; spatial folds are blocks](images/cv-folds.png){width="80%"}
+![Output of Step 4.2: random folds are mixed everywhere; spatial folds are blocks](images/step4-folds.png){width="85%"}
+
+The spatial blocks are very unequal: the smallest holds 5 sites and the largest 112.
 
 A good cross-validation should mimic the prediction situation (Meyer & Pebesma, 2022). We compare the distance from each test site to its nearest training site with the distance from each pixel of the map to its nearest training site.
 
@@ -110,12 +112,20 @@ ggsave("Output/FigS5_distances_CV.pdf", p_dist, width = 8, height = 6)
 round(c(map = median(d_map), random_CV = median(d_random), spatial_CV = median(d_spatial)), 1)
 ```
 
-![Distance to the nearest training site: map pixels vs. random CV vs. spatial CV](images/cv-distances.png){width="80%"}
+![Output of Step 4.2 (Fig. S5): distance to the nearest training site for map pixels, random CV and spatial CV](images/figS5-distances.png){width="80%"}
+
+*What you should see:*
+
+```
+##        map  random_CV spatial_CV
+##       83.8        5.5       80.5
+```
+
 
 ::: {.callout-warning icon="false"}
 ## 🔍 Look carefully
 
-In random cross-validation, the test sites are typically less than 1 km from a training site (median 6 km), whereas the median map pixel is 84 km from any data. The spatial cross-validation (84 km) is much closer to the real prediction situation. **This is why we use the spatial cross-validation for predictor selection (Step 4.4) and tuning (Step 4.6).**
+In random cross-validation, the test sites are typically a few km from a training site (median ~6 km), whereas the median map pixel is ~84 km from any data. The spatial cross-validation (~81 km) is much closer to the real prediction situation. **This is why we use the spatial cross-validation for predictor selection (Step 4.4) and tuning (Step 4.6).**
 :::
 
 ## Step 4.3: Predictor selection with VSURF
@@ -139,7 +149,7 @@ VSURF uses the out-of-bag error, which does not know about spatial autocorrelati
 ::: callout-important
 ## This step takes ~8 minutes
 
-Start it before lunch! If your laptop is slow, load the saved result instead: `load("Output/VSURF_all")`.
+Start it before lunch! If your laptop is slow, load the pre-computed result instead: `load("Output/VSURF_all.gz")` (note the `.gz`), then continue with the next chunk.
 :::
 
 ```{r}
@@ -194,7 +204,20 @@ vsurf_step <- "interp"
 vars_vsurf <- vsurf_sets[[vsurf_step]]
 ```
 
-![VSURF: OOB error drops quickly and reaches a minimum at about seven variables](images/vsurf.png){width="80%"}
+![Output of Step 4.3: the VSURF steps. Bottom left: the interpretation step keeps 16 variables (red line)](images/step4-vsurf.png){width="80%"}
+
+*What you should see:*
+
+```
+##  thres interp   pred
+##     41     16      9
+## $interp
+##  [1] "r.srsrq1.f25"   "r.srsrq1.f05"   "r.meanage_geol" "r.distance"
+##  [5] "r.africa.Ca.0"  "r.wetland"      "r.foss"         "r.africa.Fe.20"
+##  [9] "r.elevation"    "r.salt"         "r.dust"         "r.africa.S.20"
+## [13] "r.age"          "r.volc"         "r.africa.K.0"   "r.srsrq1"
+```
+
 
 ## Step 4.4: Spatial pruning of the predictors
 
@@ -236,6 +259,8 @@ vars_final
 # Training dataset for random forest: 87Sr/86Sr + selected predictors
 training_rf <- sr_agg[, c("X87Sr86Sr", vars_final)]
 ```
+
+In our run, removing any single variable never improved the spatial-CV RMSE by more than 2%, so the spatial pruning kept all **16** VSURF variables.
 
 ## Step 4.5: Compare the predictor sets
 
@@ -279,7 +304,7 @@ if (nrow(pruning_path) > 1) {
 }
 ```
 
-![Random CV barely changes between predictor sets (0.75–0.76); spatial CV separates them (0.57–0.71)](images/cv-predictor-sets.png){width="85%"}
+![Output of Step 4.5 (Fig. S6): random CV barely changes between predictor sets (0.75–0.79); spatial CV separates them (0.54–0.70)](images/figS6-predictor-sets.png){width="90%"}
 
 ## Step 4.6: Tune and train the random forest
 
@@ -349,6 +374,14 @@ cv_compare
 write.csv(cv_compare, "Output/cross_validation_random_vs_spatial.csv")
 ```
 
+*What you should see:*
+
+```
+##                   RMSE  Rsquared         MAE
+## Random_CV  0.003947601 0.7706560 0.002069309
+## Spatial_CV 0.004834838 0.6633814 0.002958629
+```
+
 ## Step 4.7: Plot the cross-validation results
 
 ```{r}
@@ -386,7 +419,7 @@ p3
 ggsave("Output/FigS2.pdf", p3, width = 14, height = 12)
 ```
 
-![Same model, same data: R² = 0.77 with random CV, 0.71 with spatial CV](images/cv-obs-pred.png)
+![Output of Step 4.7 (Fig. S2): same model, same data: R² = 0.77 with random CV, 0.66 with spatial CV](images/figS2-obs-pred.png){width="85%"}
 
 Where are the large errors of the spatial cross-validation?
 
@@ -410,12 +443,12 @@ p_res
 ggsave("Output/FigS7_residual_map.pdf", p_res, width = 8, height = 7)
 ```
 
-![Spatial-CV residuals (observed − predicted) at each site](images/cv-residual-map.png){width="60%"}
+![Output of Step 4.7 (Fig. S7): spatial-CV residuals (observed − predicted) at each site](images/figS7-residual-map.png){width="65%"}
 
 ::::::: think-pair-share
 ### Think · Pair · Share: random vs. spatial CV
 
-Same model, same data: random CV R² = 0.77 (RMSE 0.0040), spatial-block CV R² = 0.71 (RMSE 0.0045). **Which one would you report in a paper, and why?**
+Same model, same data: random CV R² = 0.77 (RMSE 0.0039), spatial-block CV R² = 0.66 (RMSE 0.0048). **Which one would you report in a paper, and why?**
 
 :::::: tps-steps
 ::: tps-step
@@ -426,7 +459,7 @@ Same model, same data: random CV R² = 0.77 (RMSE 0.0040), spatial-block CV R² 
 cv_compare
 ```
 
-On your own, compare the fold maps and the distance plot: test sites sit 6 km (random) vs. 84 km (spatial) from the training data, and map pixels sit 84 km away.
+On your own, compare the fold maps and the distance plot: test sites sit ~6 km (random) vs. ~81 km (spatial) from the training data, and map pixels sit ~84 km away.
 :::
 
 ::: tps-step
@@ -434,7 +467,7 @@ On your own, compare the fold maps and the distance plot: test sites sit 6 km (r
 
 With your neighbour:
 
--   Random CV barely changes between predictor sets; spatial CV separates them. What does that tell you about OOB error and VSURF?
+-   Random CV barely changes between predictor sets (0.75–0.79); spatial CV separates them (0.54–0.70). What does that tell you about OOB error and VSURF?
 -   What are the weaknesses of spatial CV?
 :::
 
@@ -491,6 +524,12 @@ Use `vsurf_step <- "pred"` (as in the global script) instead of `"interp"` in St
 2.  Does the spatial CV change?
 :::
 
+::: {.callout-caution collapse="true"}
+## Things to look for
+
+In our run, the prediction step keeps **9** variables, and its spatial R² (0.70) is *higher* than with the 16 interpretation variables (0.66) (Fig. S6). Fewer, less redundant predictors can transfer better to new regions. Which of the coarse layers survive?
+:::
+
 ### Exercise 2: pruning tolerance
 
 ::: {.callout-tip icon="false"}
@@ -532,7 +571,7 @@ Fewer, larger blocks push the test sites further from the training data, so the 
 
 -   Random CV measures interpolation between nearby sites; spatial CV measures prediction in new regions.
 -   OOB error and VSURF behave like random CV, so we prune and tune with spatial CV.
--   The final model keeps seven predictors, with R² = 0.71 in spatial CV.
+-   The final model keeps 16 predictors, with R² = 0.66 in spatial CV (0.77 in random CV).
 :::
 
 # **Next:** [5. Interpreting the model →](05-interpretation.qmd)

@@ -167,6 +167,24 @@ sr_agg <- sr_agg[complete.cases(sr_agg),]
 write.table(sr_agg,"Output/sr_agg_all.txt",sep = "\t",col.names = T, row.names = F, quote = F)
 ```
 
+![Output of Step 3.6: correlation matrix of the 64 candidate covariates (blue = positive, red = negative)](images/step3-corrplot.png){width="100%"}
+
+*What you should see:*
+
+```
+## high_cor
+##  [1] "r.ph"               "r.map"              "r.africa.Fe.0"
+##  [4] "r.biogenic"         "r.biofuels"         "r.fire"
+##  [7] "r.africa.Al.20"     "r.meanage_geol.f10" "r.meanage_geol.f05"
+## [10] "r.africa.sand.20"   "r.africa.S.0"       "r.meanage_geol.f25"
+## [13] "r.africa.Zn.0"      "r.minage_geol"      "r.maxage_geol"
+## [16] "r.srsrq1.f10"       "r.africa.Ca.20"     "r.africa.K.20"
+## [19] "r.africa.Mg.0"      "r.africa.silt.0"    "r.africa.P.0"
+## [22] "r.africa.eCEC.0"
+```
+
+22 of the 64 candidates are removed, leaving **42 covariates** for VSURF.
+
 ::::::: think-pair-share
 ### Think · Pair · Share: correlated covariates
 
@@ -210,6 +228,12 @@ Tell the room:
 ::: {.callout-caution collapse="true"}
 ## Things you might have noticed
 
+**🔗 The strongest pairs in our data**
+
+-   Same source dataset: `r.meanage_geol` / `r.minage_geol` / `r.maxage_geol` (r = 1.00); `r.africa.Ca.0` / `r.africa.Ca.20` (1.00) and the other iSDA depth pairs (0.97–1.00); `r.fire` / `r.biofuels` / `r.biogenic` (0.99), all from the same aerosol model.
+-   Same process at different scales: `r.srsrq1.f05` / `r.srsrq1.f10` (0.96), `r.srsrq1.f10` / `r.srsrq1.f25` (0.92).
+-   Shared climate gradient: `r.map` / `r.ai` (0.95), `r.map` / `r.ph` (−0.91), since wetter soils are more leached and acidic.
+
 **🌲 What collinearity does to a random forest**
 
 -   **Predictions:** little effect. Each split simply uses whichever correlated variable is drawn (`mtry`).
@@ -219,7 +243,7 @@ Tell the room:
 
 **🛠️ What the script does**
 
--   `findCorrelation()`: for each pair with \|r\| \> 0.9, drop the variable with the highest mean correlation → 39 candidates.
+-   `findCorrelation()`: for each pair with \|r\| \> 0.9, drop the variable with the highest mean correlation: 64 → 42 candidates.
 -   VSURF ([Step 4.3](04-cross-validation.qmd#step-4.3-predictor-selection-with-vsurf)): the thresholding step removes noise; the prediction step removes redundancy.
 -   Spatial pruning ([Step 4.4](04-cross-validation.qmd#step-4.4-spatial-pruning-of-the-predictors)): drop variables that worsen the spatial-CV RMSE by \> 2%.
 

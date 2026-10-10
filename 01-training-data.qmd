@@ -137,6 +137,24 @@ table(sr_orig$material_type)
 summary(sr_orig$X87Sr86Sr)
 ```
 
+*What you should see:*
+
+```
+## [1] 927
+##                       inorganic-organic composite : soil   60
+##                        organism : animal : animal tissue    3
+##                 organism : animal : animal tissue : bone   24
+##                organism : animal : animal tissue : shell   64
+##                organism : animal : animal tissue : tooth   21
+##       organism : animal : animal tissue : tooth : dentin    1
+##       organism : animal : animal tissue : tooth : enamel  146
+##                          organism : plant : plant tissue  393
+##                   organism : plant : plant tissue : leaf  212
+##                           organism : plant : whole plant    3
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+##  0.7063  0.7123  0.7154  0.7203  0.7262  0.7885
+```
+
 ## Step 1.2: Project the data into Eckert IV
 
 We will use the Eckert IV equal-area projection (1 km pixels) for everything.
@@ -148,7 +166,7 @@ sr_proj <- st_as_sf(sr_orig, coords = c("collection_decimal_longitude", "collect
 plot(sr_proj["X87Sr86Sr"], pch = 16, cex = 0.6)
 ```
 
-![Training data: 927 records at 579 sites, coloured by sample type](images/training-data-map.png){width="70%"}
+![Training sites on elevation, coloured by sample type (`Output/Fig1.pdf`, made in Step 5.3)](images/fig1-training-sites.png){width="70%"}
 
 ## Step 1.3: Administrative maps
 

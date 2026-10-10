@@ -285,7 +285,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">October 9, 2026</p>
+      <p class="date-modified">October 10, 2026</p>
     </div>
   </div>
     
@@ -429,28 +429,11 @@ This step takes a few minutes
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(rf_sr_sd, <span class="at">col =</span> <span class="fu">viridis_pal</span>(<span class="at">option =</span> <span class="st">"turbo"</span>)(<span class="dv">13</span>), <span class="at">breaks =</span> breakpoints2, <span class="at">axes =</span> <span class="cn">FALSE</span>, <span class="at">main =</span> <span class="st">"Uncertainty (1 SD)"</span>)</span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">st_geometry</span>(za_p), <span class="at">add =</span> <span class="cn">TRUE</span>, <span class="at">border =</span> <span class="st">"grey30"</span>, <span class="at">lwd =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div>
-
-</div>
-<div class="quarto-layout-panel" data-layout-ncol="2">
-<div class="quarto-layout-row">
-<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><a href="images/isoscape-mean.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Bioavailable ⁸⁷Sr/⁸⁶Sr"><img src="images/isoscape-mean.png" class="img-fluid figure-img" alt="Bioavailable ⁸⁷Sr/⁸⁶Sr"></a></p>
-<figcaption>Bioavailable ⁸⁷Sr/⁸⁶Sr</figcaption>
+<p><a href="images/fig2-isoscape-sd.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Output of Step 5.3 (Fig. 2): bioavailable ⁸⁷Sr/⁸⁶Sr (left) and its uncertainty, 1 SD (right), with the training sites"><img src="images/fig2-isoscape-sd.png" class="img-fluid figure-img" alt="Output of Step 5.3 (Fig. 2): bioavailable ⁸⁷Sr/⁸⁶Sr (left) and its uncertainty, 1 SD (right), with the training sites"></a></p>
+<figcaption>Output of Step 5.3 (Fig. 2): bioavailable ⁸⁷Sr/⁸⁶Sr (left) and its uncertainty, 1 SD (right), with the training sites</figcaption>
 </figure>
-</div>
-</div>
-<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><a href="images/isoscape-sd.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Uncertainty (1 SD)"><img src="images/isoscape-sd.png" class="img-fluid figure-img" alt="Uncertainty (1 SD)"></a></p>
-<figcaption>Uncertainty (1 SD)</figcaption>
-</figure>
-</div>
-</div>
-</div>
 </div>
 <p>Zoom into the south-western Cape, where most training sites are:</p>
 <div>
@@ -458,21 +441,11 @@ This step takes a few minutes
 </div>
 <div class="quarto-layout-panel" data-layout-ncol="2">
 <div class="quarto-layout-row">
-<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><a href="images/swcape-mean.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Mean ⁸⁷Sr/⁸⁶Sr, south-western Cape"><img src="images/swcape-mean.png" class="img-fluid figure-img" alt="Mean ⁸⁷Sr/⁸⁶Sr, south-western Cape"></a></p>
-<figcaption>Mean ⁸⁷Sr/⁸⁶Sr, south-western Cape</figcaption>
-</figure>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<p><a href="images/swcape-mean.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2"><img src="images/swcape-mean.png" class="img-fluid"></a></p>
 </div>
-</div>
-<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><a href="images/swcape-sd.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Uncertainty (1 SD), south-western Cape"><img src="images/swcape-sd.png" class="img-fluid figure-img" alt="Uncertainty (1 SD), south-western Cape"></a></p>
-<figcaption>Uncertainty (1 SD), south-western Cape</figcaption>
-</figure>
-</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<p><a href="images/swcape-sd.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3"><img src="images/swcape-sd.png" class="img-fluid"></a></p>
 </div>
 </div>
 </div>
@@ -533,7 +506,7 @@ Things you might have noticed
 <li>The highest SD (&gt; 0.02) is over the same radiogenic terrains: old rocks have very heterogeneous minerals, and there are few sites.</li>
 <li>The SD is low over the Karoo interior despite sparse data. A quantile random forest reports the spread of <em>similar training sites</em>, not the distance to the data.</li>
 <li>So the SD can underestimate the error where the model extrapolates. Pair it with an area of applicability (Meyer &amp; Pebesma 2021, <code>CAST::aoa()</code>).</li>
-<li>Check sharp boundaries and blocky shapes against the covariates that created them.</li>
+<li>Check sharp boundaries and blocky shapes against the covariates that created them. For example, the straight north–south edges in the south-western Cape SD map follow no geological contact: they likely come from the coarse (~1–2°) deposition layers that entered the model with <code>candidate_set &lt;- "all"</code>.</li>
 </ul>
 <p><strong>🦋 For assignment</strong></p>
 <ul>

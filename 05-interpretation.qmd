@@ -49,9 +49,9 @@ imp
 ggsave("Output/FigS3.pdf", imp, width = 14, height = 12)
 ```
 
-![Permutation importance of the seven selected predictors](images/importance.png){width="60%"}
+![Output of Step 4.8 (Fig. S3): permutation importance of the 16 predictors in the final model](images/figS3-importance.png){width="75%"}
 
-`r.srsrq1.f25`, the mean bedrock ⁸⁷Sr/⁸⁶Sr within 25 km, is by far the most important predictor.
+`r.srsrq1.f25`, the mean bedrock ⁸⁷Sr/⁸⁶Sr within 25 km, is by far the most important predictor, followed by `r.srsrq1.f05`, `r.meanage_geol`, `r.africa.Ca.0`, `r.wetland` and `r.distance`. Notice that the pixel-scale bedrock model `r.srsrq1` comes last: its neighbourhood versions carry the same information.
 
 ::: callout-warning
 ## Importance is not a process
@@ -138,7 +138,7 @@ final_plot
 ggsave("Output/FigS4.pdf", final_plot, width = 16, height = 14)
 ```
 
-![Partial dependence of predicted ⁸⁷Sr/⁸⁶Sr on the seven selected predictors](images/pdp.png){width="85%"}
+![Output of Step 4.8 (Fig. S4): partial dependence of predicted ⁸⁷Sr/⁸⁶Sr on the 16 predictors, with the distribution of the training sites below each curve](images/figS4-pdp.png)
 
 ::::::: think-pair-share
 ### Think · Pair · Share: reading partial dependence
@@ -149,7 +149,7 @@ Each curve is the predicted ⁸⁷Sr/⁸⁶Sr as one covariate varies, averaged 
 ::: tps-step
 **💭 Think** [2 min]{.tps-time}
 
-On your own, describe each of the seven curves:
+On your own, describe the curves (start with the six most important predictors):
 
 -   Rising, falling, flat, or a step?
 -   Where along the x-axis are the data?
@@ -189,7 +189,8 @@ Tell the room:
 -   The sharp step in `f25` at ~0.718–0.720: a real threshold, or a few radiogenic sites (sparse rug) driving one split?
 -   Extractable Ca: a weak *positive* effect. Did you expect high Ca → carbonate → lower ⁸⁷Sr/⁸⁶Sr? Could Ca instead track arid, calcrete-rich soils over old basement?
 -   Wetland: higher Sr where wetland cover is low. A process, or a proxy for location?
--   Elevation: almost flat, with ~0 importance. Why is it still in the model?
+-   `r.srsrq1` (bedrock under the pixel) has ~0 importance, while its 5 and 25 km versions dominate. What does that say about where bioavailable Sr comes from?
+-   The coarse layers (`r.salt`, `r.dust`, `r.volc`, `r.foss`) have flat curves and low importance. Process, or proxy for location?
 
 **⚠️ Read PDPs carefully**
 
@@ -205,7 +206,7 @@ Tell the room:
 ::: {.callout-note appearance="simple"}
 ## Key takeaways
 
--   Neighbourhood bedrock ⁸⁷Sr/⁸⁶Sr dominates the model, followed by soil Ca, local bedrock, wetland, age and distance to the coast.
+-   Neighbourhood bedrock ⁸⁷Sr/⁸⁶Sr dominates the model, followed by geological age, soil Ca, wetland and distance to the coast.
 -   Most partial dependence curves agree with Sr cycling; the ones that don't are worth a closer look.
 -   Random forests cannot extrapolate beyond the range of the training data.
 :::

@@ -769,7 +769,7 @@ In the global script we used `varselect.pred`. Here we use `varselect.interp` by
 - **Performance Metrics:** Evaluate how the removal of variables impacts performance metrics. A balance between fewer predictors and optimal predictive accuracy is sought.
 
 **Direct Access:**
-If you faced processing time issues, load the saved VSURF output (`load("Output/VSURF_all")`) to continue.
+If you faced processing time issues, load the pre-computed VSURF output (`load("Output/VSURF_all.gz")`, note the `.gz`) to continue.
 
 ```{r}
 #Plot VSURF results

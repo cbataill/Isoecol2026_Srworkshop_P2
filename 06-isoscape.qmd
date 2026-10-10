@@ -237,4 +237,4 @@ Use `Output/rf_all_pred.tif` and `Output/rf_all_sd.tif` as the isoscape and its 
 -   Choose predictors with process knowledge, validate spatially, and map the uncertainty.
 :::
 
-# **Next:** [Module 3: geographic assignment →](https://meganreich.github.io/Isoecol2026_Srworkshop_P3/)
+# **Next:** [7. Remaining issues and ways forward →](07-remaining-issues.qmd)

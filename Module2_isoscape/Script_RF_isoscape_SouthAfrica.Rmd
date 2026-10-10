@@ -1235,6 +1235,8 @@ plot(st_geometry(za_p), add = TRUE, border = "grey30", lwd = 0.5)
 
 > 🛑 **STOP: Think · Pair · Share.** Before you continue, switch to the website ([page 6, "patterns and uncertainty"](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/06-isoscape.html#think-pair-share-patterns-and-uncertainty)). Think on your own, discuss with your neighbour, then share with the room.
 
+> 📖 **Website, page 7: [Remaining issues and ways forward](https://cbataill.github.io/Isoecol2026_Srworkshop_P2/07-remaining-issues.html).** Discussion only, no code: data, extrapolation, spatial autocorrelation and covariates.
+
 ## Additional exercises
 
 1. **Candidate covariates**: run the script with `candidate_set <- "no_coarse"` (Step 3.5). Compare Fig. S6 (random vs. spatial CV of the predictor sets) and the maps. Look at the shape of the patterns created by the coarse deposition layers. =

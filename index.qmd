@@ -32,6 +32,7 @@ By the end of this module you will be able to:
 -   Select predictors and evaluate a random forest model with random and spatial cross-validation
 -   Interpret variable importance and partial dependence plots
 -   Map the isoscape and its uncertainty with a quantile random forest
+-   Recognise the remaining limits of random forest isoscapes and how to address them
 
 ## Schedule
 
@@ -40,7 +41,7 @@ By the end of this module you will be able to:
 | In advance    | [Before the workshop](#before-the-workshop)                                  |
 | 11:15 – 12:30 | [0. How random forest works](00-random-forest.qmd) · [1. Training data](01-training-data.qmd) · [2. Covariates](02-covariates.qmd) · [3. Regression matrix](03-regression-matrix.qmd) |
 | 12:30 – 13:30 | Lunch (VSURF and the model run while we eat)                                 |
-| 13:30 – 14:30 | [4. Cross-validation](04-cross-validation.qmd) · [5. Interpretation](05-interpretation.qmd) · [6. Isoscape](06-isoscape.qmd) |
+| 13:30 – 14:30 | [4. Cross-validation](04-cross-validation.qmd) · [5. Interpretation](05-interpretation.qmd) · [6. Isoscape](06-isoscape.qmd) · [7. Remaining issues](07-remaining-issues.qmd) |
 | After the workshop | [Extra: applying this to your own study area](02b-own-study-area.qmd) |
 
 ## Before the workshop

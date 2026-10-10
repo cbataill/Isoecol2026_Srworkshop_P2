@@ -11,6 +11,7 @@ project:
     - 04-cross-validation.qmd
     - 05-interpretation.qmd
     - 06-isoscape.qmd
+    - 07-remaining-issues.qmd
   resources:
     - files/
 
@@ -60,6 +61,7 @@ website:
           - 04-cross-validation.qmd
           - 05-interpretation.qmd
           - 06-isoscape.qmd
+          - 07-remaining-issues.qmd
 
   page-footer:
     left: "© 2026 Clement Bataille · CC BY 4.0"

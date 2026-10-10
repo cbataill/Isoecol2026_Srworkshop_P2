@@ -1236,10 +1236,9 @@ plot(st_geometry(za_p), add = TRUE, border = "grey30", lwd = 0.5)
 
 ## Additional exercises
 
-1. **Sample types**: train the model with plants only (`sr_orig <- sr_orig[grepl("plant", sr_orig$material_type), ]` in Step 1.1). Where does the isoscape change? Why?
-2. **Candidate covariates**: run the script with `candidate_set <- "no_coarse"` (Step 3.5). Compare Fig. S6 (random vs. spatial CV of the predictor sets) and the maps. Look at the shape of the patterns created by the coarse deposition layers. =
-3. **VSURF step**: use `vsurf_step <- "pred"` (as in the global script) instead of `"interp"`. How many variables are kept? Does the spatial CV change?
-4. **Pruning tolerance**: change `tol` (Step 4.4) to 0.005 and to 0.05. How many variables are kept? How does the spatial CV change?
-5. **Spatial folds**: change the number of spatial clusters (`centers = 10` in Step 4.2) to 5 or 20. How do the distance distributions (Fig. S5) and the spatial R2 change?
-6. **Uncertainty**: where is the uncertainty highest? Is it where there are no data, where the geology is complex, or both?
-7. **Assignment**: use `Output/rf_all_pred.tif` and `Output/rf_all_sd.tif` as the isoscape and its uncertainty in a Bayesian assignment (e.g. `assignR::pdRaster`).
+1. **Candidate covariates**: run the script with `candidate_set <- "no_coarse"` (Step 3.5). Compare Fig. S6 (random vs. spatial CV of the predictor sets) and the maps. Look at the shape of the patterns created by the coarse deposition layers. =
+2. **VSURF step**: use `vsurf_step <- "pred"` (as in the global script) instead of `"interp"`. How many variables are kept? Does the spatial CV change?
+3. **Pruning tolerance**: change `tol` (Step 4.4) to 0.005 and to 0.05. How many variables are kept? How does the spatial CV change?
+4. **Spatial folds**: change the number of spatial clusters (`centers = 10` in Step 4.2) to 5 or 20. How do the distance distributions (Fig. S5) and the spatial R2 change?
+5. **Uncertainty**: where is the uncertainty highest? Is it where there are no data, where the geology is complex, or both?
+6. **Assignment**: use `Output/rf_all_pred.tif` and `Output/rf_all_sd.tif` as the isoscape and its uncertainty in a Bayesian assignment (e.g. `assignR::pdRaster`).

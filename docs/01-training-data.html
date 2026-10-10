@@ -536,19 +536,23 @@ Things you might have noticed
 <li>Herbaceous host plants (thistles, mallows, other Asteraceae) are the closest analogue: shallow roots, same Sr pool.</li>
 <li>Soil leachates, deep-rooted trees and small mammals sample other Sr pools or larger areas, and can be offset from host plants.</li>
 </ul>
-<p><strong>🗺️ The map you need</strong></p>
+<p><strong>🗺️ Is our dataset a good fit? Yes!</strong></p>
 <ul>
-<li>A plant-based (or plant-dominated) bioavailable Sr isoscape. Try it in <a href="./06-isoscape.html#exercises">Exercise 1</a>.</li>
-<li>An extent covering the whole potential natal range. Painted ladies may come from beyond South Africa (Namibia, Botswana, Zimbabwe…).</li>
-<li>A resolution matching the larval home range (~1 km is fine for a caterpillar).</li>
-<li>A pixel-level uncertainty (SD) to feed <code>assignR::pdRaster()</code> in Module 3.</li>
+<li>It is mostly plants (66%) plus small-range fauna (28%) that eat local plants, and everything that does not reflect local bioavailable Sr (waters, large or migratory animals, humans, fossils) has already been removed.</li>
+<li>So it represents plant bioavailable Sr well. This is the isoscape we use for the butterflies in Module 3.</li>
+<li>We also need an extent covering the whole potential natal range, ~1 km resolution (fine for a caterpillar), and a pixel-level uncertainty (SD) to feed <code>assignR::pdRaster()</code> in Module 3.</li>
+</ul>
+<p><strong>⚖️ Substrate vs.&nbsp;coverage</strong></p>
+<ul>
+<li>Substrate matters: always ask whether your training data sample the same Sr pool as your organism.</li>
+<li>But bioavailable Sr data are still scarce. Removing every substrate that is not a perfect match would leave large regions with no data, and the isoscape would get worse, not better.</li>
+<li>At this stage, <strong>more data and better coverage beat perfect substrate matching</strong>. The uncertainty (SD) map absorbs part of the substrate differences. Substrate-specific isoscapes will make sense once we have many more data.</li>
 </ul>
 <p><strong>⚠️ Watch out</strong></p>
 <ul>
 <li>579 sites, but most are in the south-western Cape: the interior (Karoo, Northern Cape, Limpopo) will be predicted from covariates, not data.</li>
-<li>Mixing substrates adds variance: part of the “model error” is a substrate offset.</li>
 </ul>
-<p><strong>Take-home:</strong> match the isoscape to the organism: the same Sr pool, the same spatial scale, and an extent as large as the question.</p>
+<p><strong>Take-home:</strong> think about substrate, but don’t screen your data to death. A well-screened, mostly plant dataset with good coverage is the right isoscape for a butterfly today.</p>
 </div>
 </div>
 </div>

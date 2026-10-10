@@ -214,28 +214,7 @@ Tell the room:
 
 ## Exercises
 
-### Exercise 1: sample types
-
-::: {.callout-tip icon="false"}
-## 🧩 Your turn
-
-Train the model with plants only. In Step 1.1, add:
-
-```{r}
-#| label: ex1-plants
-sr_orig <- sr_orig[grepl("plant", sr_orig$material_type), ]
-```
-
-Then re-run the script. Where does the isoscape change? Why?
-:::
-
-::: {.callout-caution collapse="true"}
-## Things to look for
-
-Compare the two maps in the regions where most of the removed fauna and soil sites were. Small mammals integrate Sr over a home range and diet, and soil leachates sample a different pool than plant roots, so the plant-only map should be closer to what a caterpillar eats. It also has fewer sites, so check the spatial CV and the SD too.
-:::
-
-### Exercise 2: uncertainty
+### Exercise 1: uncertainty
 
 ::: {.callout-tip icon="false"}
 ## 🧩 Your turn
@@ -243,7 +222,7 @@ Compare the two maps in the regions where most of the removed fauna and soil sit
 Plot the training sites on the SD map. Where is the uncertainty highest? Is it where there are no data, where the geology is complex, or both?
 :::
 
-### Exercise 3: from isoscape to assignment
+### Exercise 2: from isoscape to assignment
 
 ::: {.callout-tip icon="false"}
 ## 🧩 Your turn

@@ -248,9 +248,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises">Exercises</a>
   <ul class="collapse">
-  <li><a href="#exercise-1-sample-types" id="toc-exercise-1-sample-types" class="nav-link" data-scroll-target="#exercise-1-sample-types">Exercise 1: sample types</a></li>
-  <li><a href="#exercise-2-uncertainty" id="toc-exercise-2-uncertainty" class="nav-link" data-scroll-target="#exercise-2-uncertainty">Exercise 2: uncertainty</a></li>
-  <li><a href="#exercise-3-from-isoscape-to-assignment" id="toc-exercise-3-from-isoscape-to-assignment" class="nav-link" data-scroll-target="#exercise-3-from-isoscape-to-assignment">Exercise 3: from isoscape to assignment</a></li>
+  <li><a href="#exercise-1-uncertainty" id="toc-exercise-1-uncertainty" class="nav-link" data-scroll-target="#exercise-1-uncertainty">Exercise 1: uncertainty</a></li>
+  <li><a href="#exercise-2-from-isoscape-to-assignment" id="toc-exercise-2-from-isoscape-to-assignment" class="nav-link" data-scroll-target="#exercise-2-from-isoscape-to-assignment">Exercise 2: from isoscape to assignment</a></li>
   </ul></li>
   <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
   <li><a href="#next-module-3-geographic-assignment" id="toc-next-module-3-geographic-assignment" class="nav-link" data-scroll-target="#next-module-3-geographic-assignment"><strong>Next:</strong> Module 3: geographic assignment →</a></li>
@@ -542,44 +541,8 @@ Things you might have noticed
 </section>
 <section id="exercises" class="level2">
 <h2 class="anchored" data-anchor-id="exercises">Exercises</h2>
-<section id="exercise-1-sample-types" class="level3">
-<h3 class="anchored" data-anchor-id="exercise-1-sample-types">Exercise 1: sample types</h3>
-<div class="callout callout-style-default callout-tip no-icon callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon no-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-🧩 Your turn
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>Train the model with plants only. In Step 1.1, add:</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>sr_orig <span class="ot">&lt;-</span> sr_orig[<span class="fu">grepl</span>(<span class="st">"plant"</span>, sr_orig<span class="sc">$</span>material_type), ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>Then re-run the script. Where does the isoscape change? Why?</p>
-</div>
-</div>
-<div class="callout callout-style-default callout-caution callout-titled">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="false" aria-label="Toggle callout">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Things to look for
-</div>
-<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
-</div>
-<div id="callout-5" class="callout-5-contents callout-collapse collapse">
-<div class="callout-body-container callout-body">
-<p>Compare the two maps in the regions where most of the removed fauna and soil sites were. Small mammals integrate Sr over a home range and diet, and soil leachates sample a different pool than plant roots, so the plant-only map should be closer to what a caterpillar eats. It also has fewer sites, so check the spatial CV and the SD too.</p>
-</div>
-</div>
-</div>
-</section>
-<section id="exercise-2-uncertainty" class="level3">
-<h3 class="anchored" data-anchor-id="exercise-2-uncertainty">Exercise 2: uncertainty</h3>
+<section id="exercise-1-uncertainty" class="level3">
+<h3 class="anchored" data-anchor-id="exercise-1-uncertainty">Exercise 1: uncertainty</h3>
 <div class="callout callout-style-default callout-tip no-icon callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -594,8 +557,8 @@ Things to look for
 </div>
 </div>
 </section>
-<section id="exercise-3-from-isoscape-to-assignment" class="level3">
-<h3 class="anchored" data-anchor-id="exercise-3-from-isoscape-to-assignment">Exercise 3: from isoscape to assignment</h3>
+<section id="exercise-2-from-isoscape-to-assignment" class="level3">
+<h3 class="anchored" data-anchor-id="exercise-2-from-isoscape-to-assignment">Exercise 2: from isoscape to assignment</h3>
 <div class="callout callout-style-default callout-tip no-icon callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
